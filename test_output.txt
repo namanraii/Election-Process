@@ -1,0 +1,91 @@
+
+> electioniq@1.0.0 test
+> node --experimental-vm-modules node_modules/.bin/jest
+
+(node:26872) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tests/utils.test.js
+  ● uniqueId › each call returns a unique value
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 100
+    Received: 99
+
+      89 |   test("each call returns a unique value", () => {
+      90 |     const ids = new Set(Array.from({ length: 100 }, () => uniqueId("test")));
+    > 91 |     expect(ids.size).toBe(100);
+         |                      ^
+      92 |   });
+      93 | });
+      94 |
+
+      at Object.<anonymous> (tests/utils.test.js:91:22)
+
+FAIL tests/timeline.test.js
+  ● timeline › initializes timeline correctly
+
+    The error below may be caused by using the wrong test environment, see https://jestjs.io/docs/configuration#testenvironment-string.
+    Consider using the "jsdom" test environment.
+
+    ReferenceError: document is not defined
+
+      4 | describe('timeline', () => {
+      5 |   beforeEach(() => {
+    > 6 |     document.body.innerHTML = '<div id="timeline-container"></div>';
+        |     ^
+      7 |   });
+      8 |
+      9 |   test('initializes timeline correctly', () => {
+
+      at Object.<anonymous> (tests/timeline.test.js:6:5)
+
+  ● timeline › updates milestone status
+
+    The error below may be caused by using the wrong test environment, see https://jestjs.io/docs/configuration#testenvironment-string.
+    Consider using the "jsdom" test environment.
+
+    ReferenceError: document is not defined
+
+      4 | describe('timeline', () => {
+      5 |   beforeEach(() => {
+    > 6 |     document.body.innerHTML = '<div id="timeline-container"></div>';
+        |     ^
+      7 |   });
+      8 |
+      9 |   test('initializes timeline correctly', () => {
+
+      at Object.<anonymous> (tests/timeline.test.js:6:5)
+
+FAIL tests/intent.test.js
+  ● intent classification › classifies location intent
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "location"
+    Received: "voting"
+
+      24 |
+      25 |   test("classifies location intent", () => {
+    > 26 |     expect(classifyIntent("where is my polling place?")).toBe("location");
+         |                                                          ^
+      27 |     expect(classifyIntent("directions to voting center")).toBe("location");
+      28 |   });
+      29 |
+
+      at Object.<anonymous> (tests/intent.test.js:26:58)
+
+PASS tests/nlp.test.js
+PASS tests/routes.test.js
+FAIL tests/proactive.test.js
+  ● Test suite failed to run
+
+    Cannot find module 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js' from 'js/firebase.js'
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/resolver.js:427:11)
+
+Test Suites: 4 failed, 2 passed, 6 total
+Tests:       4 failed, 46 passed, 50 total
+Snapshots:   0 total
+Time:        0.321 s, estimated 1 s
+Ran all test suites.

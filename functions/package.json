@@ -1,12 +1,12 @@
 {
-  "name": "stadiumiq-cloud-functions",
+  "name": "electioniq-cloud-functions",
   "version": "1.0.0",
-  "description": "StadiumIQ Cloud Functions — authenticated Vertex AI proxy + BigQuery analytics backend",
+  "description": "ElectionIQ Cloud Functions — authenticated Vertex AI proxy + BigQuery analytics backend",
   "license": "MIT",
   "engines": { "node": ">=20" },
   "main": "index.js",
   "scripts": {
-    "start": "node_modules/.bin/functions-framework --target=stadiumIQAssist",
+    "start": "node_modules/.bin/functions-framework --target=electionIQAssist",
     "test":  "node --test"
   },
   "dependencies": {

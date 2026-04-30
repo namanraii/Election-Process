@@ -1,22 +1,35 @@
 {
-  "name": "stadiumiq",
+  "name": "electioniq",
   "version": "1.0.0",
-  "description": "StadiumIQ — Proactive AI concierge for large-scale sporting venues. Powered by Gemini, Firebase, and Google Maps.",
+  "description": "ElectionIQ — Proactive AI civic assistant. Powered by Gemini, Firebase, and Google Maps.",
   "author": "Naman Rai",
   "license": "MIT",
   "type": "module",
-  "keywords": ["gemini", "firebase", "google-maps", "ai", "stadium", "concierge", "proactive", "google-cloud"],
+  "keywords": [
+    "gemini",
+    "firebase",
+    "google-maps",
+    "ai",
+    "civic",
+    "education",
+    "proactive",
+    "google-cloud"
+  ],
   "scripts": {
-    "test":     "node --experimental-vm-modules node_modules/.bin/jest",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
-    "lint":     "eslint js/**/*.js",
-    "serve":    "python3 -m http.server 3000"
+    "lint": "eslint js/**/*.js",
+    "serve": "python3 -m http.server 3000"
   },
   "jest": {
     "transform": {}
   },
   "devDependencies": {
-    "jest":    "^29.7.0",
-    "eslint":  "^8.57.0"
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^30.3.0"
+  },
+  "dependencies": {
+    "puppeteer": "^24.42.0"
   }
 }

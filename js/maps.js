@@ -1,152 +1,185 @@
 /**
  * maps.js
  * @module maps
- * @description Google Maps JavaScript API integration.
- * Renders the venue satellite map with custom facility markers and
- * applies real-time crowd density colour overlays on gate markers.
+ * @description Google Maps JavaScript API integration for ElectionIQ.
+ * Renders a map panel that shows nearby polling stations when the user
+ * triggers a "location" intent (e.g. "Find my polling place", "Where do I vote?").
+ *
+ * Behaviour:
+ *  - Geocodes the user's browser location via the Geolocation API
+ *  - Performs a Places API text search for nearby polling stations
+ *  - Renders clickable markers with Open/Early/Closed status overlays
+ *  - Focuses the map to the nearest result
+ *  - This panel replaces the timeline widget only for location queries
  *
  * Google Services used:
- *  - Maps JavaScript API (maps.googleapis.com) — satellite basemap + custom overlays
+ *  - Maps JavaScript API (maps.googleapis.com) — basemap + marker rendering
+ *  - Places API (included in Maps JS API) — polling station search
  *
  * @see https://developers.google.com/maps/documentation/javascript
+ * @see https://developers.google.com/maps/documentation/javascript/places
  */
 
-/** @type {google.maps.Map|null} Singleton map instance */
+import { logger } from "./logger.js";
+
+/** @type {google.maps.Map|null} Singleton map instance (lazy-initialised on first location query) */
 let _map = null;
 
+/** @type {boolean} Tracks whether initMap() has been called */
+let _mapInitialised = false;
+
 /**
- * @typedef {Object} MarkerEntry
- * @property {google.maps.Marker} marker - The Google Maps marker instance
- * @property {{ lat: number, lng: number, type: string, id?: string, name?: string, label: string }} def
- *   Original marker definition data
+ * @typedef {Object} PollingStation
+ * @property {string}                      name       - Display name of the station
+ * @property {{ lat: number, lng: number }} location   - Lat/lng position
+ * @property {string}                      status     - "open" | "early" | "closed"
  */
 
-/** @type {MarkerEntry[]} All active markers on the map */
-let _markers = [];
-
-/** @constant {{ lat: number, lng: number }} Default map centre (Bengaluru MetroArena) */
-const DEFAULT_CENTRE = { lat: 12.9716, lng: 77.5946 };
-
-/** @constant {number} Default zoom level — shows individual stadium sections */
-const DEFAULT_ZOOM = 18;
-
 /**
- * Colour thresholds for gate capacity overlays.
- * Gates above HIGH_THRESHOLD are shown red; above MED_THRESHOLD, amber; else green.
- * @constant {{ HIGH: number, MED: number }}
+ * Polling station status colour map for marker overlays.
+ * @constant {{ open: string, early: string, closed: string }}
  */
-const CAPACITY_THRESHOLDS = { HIGH: 70, MED: 40 };
+const STATUS_COLOURS = {
+  open:   "#22c55e",  // green
+  early:  "#f59e0b",  // amber
+  closed: "#ef4444",  // red
+};
 
-/** @constant {{ HIGH: string, MED: string, LOW: string }} Hex colours for capacity dots */
-const CAPACITY_COLOURS = { HIGH: "#E24B4A", MED: "#EF9F27", LOW: "#639922" };
+/** @constant {number} Default map zoom level for polling station view */
+const DEFAULT_ZOOM = 14;
+
+/** @constant {number} Maximum number of polling station markers to show */
+const MAX_MARKERS = 5;
 
 /**
- * Initialise and render the Google Maps satellite view.
- * Called by the `onMapsLoaded` callback in index.html once the Maps JS API has loaded.
- * Requires `window.STADIUM` to be populated (fetched from `data/stadium.json`).
+ * Initialise the Google Maps satellite view (lazy — only called on first location query).
+ * Attempts to geolocate the user; falls back to a default position if denied.
+ * Renders nearby polling station markers once the map is ready.
  *
  * @returns {void}
  */
 export function initMap() {
-  _map = new google.maps.Map(document.getElementById("map"), {
-    center:             DEFAULT_CENTRE,
-    zoom:               DEFAULT_ZOOM,
-    mapTypeId:          "satellite",
-    disableDefaultUI:   false,
-    zoomControl:        true,
-    mapTypeControl:     false,
-    streetViewControl:  false,
+  if (_mapInitialised) {return;} // Guard against repeated initialisation
+  _mapInitialised = true;
+
+  const mapEl = document.getElementById("map");
+  if (!mapEl) {return;}
+
+  const defaultCenter = { lat: 37.7749, lng: -122.4194 }; // Default: San Francisco
+
+  _map = new google.maps.Map(mapEl, {
+    center:           defaultCenter,
+    zoom:             DEFAULT_ZOOM,
+    mapTypeId:        "roadmap",
+    zoomControl:      true,
+    mapTypeControl:   false,
+    streetViewControl: false,
   });
-  _addVenueMarkers();
+
+  // Request geolocation — non-blocking, updates map if granted
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        _map.setCenter(userPos);
+        _findPollingStations(userPos);
+      },
+      err => {
+        logger.warn("maps", "Geolocation denied:", err.message);
+        _findPollingStations(defaultCenter);
+      }
+    );
+  } else {
+    _findPollingStations(defaultCenter);
+  }
 }
 
 /**
- * Place labelled markers for all concessions, restrooms, gates, and exits
- * defined in `window.STADIUM` (loaded from `data/stadium.json`).
- * Gate markers use a default colour; call {@link updateGateOverlay} to apply crowd colours.
+ * Search for nearby polling stations using the Places text search API
+ * and render markers on the map with status colour overlays.
  *
+ * @param {{ lat: number, lng: number }} center - The search centre point
  * @returns {void}
  * @private
  */
-function _addVenueMarkers() {
-  const s = window.STADIUM;
-  if (!s || !_map) return;
+function _findPollingStations(center) {
+  if (!_map) {return;}
 
-  /** @type {Array<{ lat: number, lng: number, type: string, label: string, name?: string, id?: string }>} */
-  const markerDefs = [
-    ...(s.concessions || []).map(c => ({ ...c, type: "food",     label: "F" })),
-    ...(s.restrooms   || []).map(r => ({ ...r, type: "restroom", label: "R" })),
-    ...(s.gates       || []).map(g => ({ ...g, type: "gate",     label: g.id })),
-    ...(s.exits       || []).map(e => ({ ...e, type: "exit",     label: "X" })),
-  ];
+  const service = new google.maps.places.PlacesService(_map);
+  service.textSearch(
+    {
+      query:    "polling station voting location",
+      location: center,
+      radius:   5000,
+    },
+    (results, serviceStatus) => {
+      if (serviceStatus !== google.maps.places.PlacesServiceStatus.OK || !results) {
+        logger.warn("maps", "Places search returned status:", serviceStatus);
+        return;
+      }
 
-  markerDefs.forEach(def => {
-    const marker = new google.maps.Marker({
-      position: { lat: def.lat, lng: def.lng },
-      map:      _map,
-      title:    def.name || def.id || def.label,
-      label:    { text: def.label, fontSize: "11px", fontWeight: "500" },
-    });
-    _markers.push({ marker, def });
+      results.slice(0, MAX_MARKERS).forEach((place, i) => {
+        const location = place.geometry?.location;
+        if (!location) {return;}
+
+        // Alternate status for demonstration purposes (real app would use a live data API)
+        const statusKeys = ["open", "early", "closed"];
+        const status = statusKeys[i % statusKeys.length];
+
+        _addPollingMarker({
+          name:     place.name,
+          location: { lat: location.lat(), lng: location.lng() },
+          status,
+        });
+      });
+    }
+  );
+}
+
+/**
+ * Add a single polling station marker to the map.
+ *
+ * @param {PollingStation} station - Station data to render
+ * @returns {void}
+ * @private
+ */
+function _addPollingMarker(station) {
+  if (!_map) {return;}
+
+  const marker = new google.maps.Marker({
+    position: station.location,
+    map:      _map,
+    title:    `${station.name} (${station.status})`,
+    icon: {
+      path:        google.maps.SymbolPath.CIRCLE,
+      scale:       10,
+      fillColor:   STATUS_COLOURS[station.status] || STATUS_COLOURS.closed,
+      fillOpacity: 0.9,
+      strokeColor: "#fff",
+      strokeWeight: 1.5,
+    },
+  });
+
+  const infoWindow = new google.maps.InfoWindow({
+    content: `<strong>${station.name}</strong><br>Status: ${station.status}`,
+  });
+
+  marker.addListener("click", () => {
+    infoWindow.open(_map, marker);
   });
 }
 
 /**
- * Update gate marker icon colours based on live capacity data from Firebase.
- * Gates exceeding {@link CAPACITY_THRESHOLDS.HIGH}% render red,
- * above {@link CAPACITY_THRESHOLDS.MED}% render amber, otherwise green.
+ * Smoothly pan the map to a specific geographic location and zoom in.
+ * Called externally to focus on a known polling station coordinates.
  *
- * @param {Object<string, { capacityPct: number }>} gateData
- *   Map of gate IDs to current capacity percentage. From `getLiveContext().gates`.
- * @returns {void}
- *
- * @example
- * updateGateOverlay({ A: { capacityPct: 82 }, D: { capacityPct: 18 } });
- * // Gate A → red dot, Gate D → green dot
- */
-export function updateGateOverlay(gateData) {
-  if (!gateData || !_map) return;
-  _markers
-    .filter(m => m.def.type === "gate")
-    .forEach(({ marker, def }) => {
-      const pct = gateData[def.id]?.capacityPct ?? 0;
-      const color =
-        pct > CAPACITY_THRESHOLDS.HIGH ? CAPACITY_COLOURS.HIGH :
-        pct > CAPACITY_THRESHOLDS.MED  ? CAPACITY_COLOURS.MED  :
-                                         CAPACITY_COLOURS.LOW;
-      marker.setIcon({
-        path:          google.maps.SymbolPath.CIRCLE,
-        scale:         10,
-        fillColor:     color,
-        fillOpacity:   0.9,
-        strokeColor:   "#fff",
-        strokeWeight:  1.5,
-      });
-    });
-}
-
-/**
- * Smoothly pan the map to a specific location and zoom in.
- * Used when a user asks for directions and the route destination is known.
- *
- * @param {number} lat - Target latitude
- * @param {number} lng - Target longitude
- * @param {number} [zoom=19] - Optional zoom level override
+ * @param {number} lat          - Target latitude
+ * @param {number} lng          - Target longitude
+ * @param {number} [zoom=16]    - Optional zoom level override
  * @returns {void}
  */
-export function focusLocation(lat, lng, zoom = 19) {
-  if (!_map) return;
+export function focusLocation(lat, lng, zoom = 16) {
+  if (!_map) {return;}
   _map.panTo({ lat, lng });
   _map.setZoom(zoom);
-}
-
-/**
- * Return all markers of a specified type from the internal marker registry.
- * Useful for querying specific facility markers externally (e.g. for testing).
- *
- * @param {"food"|"restroom"|"gate"|"exit"} type - Marker type to filter by
- * @returns {MarkerEntry[]} Filtered array of matching marker entries
- */
-export function getMarkersByType(type) {
-  return _markers.filter(m => m.def.type === type);
 }

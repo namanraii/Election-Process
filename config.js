@@ -1,14 +1,21 @@
 /**
  * config.js
- * Loads environment variables into window.ENV.
- * For production: replace __PLACEHOLDERS__ with a build script or server render.
- * For hackathon demo: fill values directly here (do NOT commit real keys).
+ * Injects runtime environment variables into window.ENV.
+ * Keys are loaded here for the hackathon demo.
+ * In production (Cloud Run), these are replaced by Secret Manager at build time.
+ *
+ * ⚠️  This file is gitignored — do NOT commit real API keys.
  */
 window.ENV = {
   GEMINI_API_KEY:      "__GEMINI_API_KEY__",
   FIREBASE_API_KEY:    "__FIREBASE_API_KEY__",
-  FIREBASE_PROJECT_ID: "smartstadium-493619",
-  FIREBASE_DB_URL:     "https://smartstadium-493619-default-rtdb.firebaseio.com",
+  FIREBASE_AUTH_DOMAIN:"__FIREBASE_AUTH_DOMAIN__",
+  FIREBASE_PROJECT_ID: "__FIREBASE_PROJECT_ID__",
+  FIREBASE_STORAGE:    "__FIREBASE_STORAGE__",
+  FIREBASE_SENDER_ID:  "__FIREBASE_SENDER_ID__",
+  FIREBASE_APP_ID:     "__FIREBASE_APP_ID__",
+  FIREBASE_MEASUREMENT:"__FIREBASE_MEASUREMENT__",
+  FIREBASE_DB_URL:     "__FIREBASE_DB_URL__",
   MAPS_API_KEY:        "__MAPS_API_KEY__",
-  ROUTES_API_KEY:      "__MAPS_API_KEY__",
+  ROUTES_API_KEY:      "__ROUTES_API_KEY__",
 };

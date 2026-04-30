@@ -1,6 +1,6 @@
 /**
- * @fileoverview StadiumIQ Cloud Functions — Secure AI Backend
- * @module stadiumiq-cloud-functions
+ * @fileoverview ElectionIQ Cloud Function — Secure AI Backend
+ * @module electioniq-cloud-functions
  *
  * Google Cloud services used in this function:
  *  - Vertex AI (aiplatform.googleapis.com) — enterprise Gemini 2.5 Flash
@@ -29,10 +29,10 @@ const { LanguageServiceClient } = require("@google-cloud/language");
 // Google Cloud Configuration
 // ---------------------------------------------------------------------------
 
-const PROJECT_ID  = process.env.GCP_PROJECT || "smartstadium-493619";
+const PROJECT_ID  = process.env.GCP_PROJECT || "gen-lang-client-0637064197";
 const LOCATION    = "us-central1";
-const BQ_DATASET  = "stadium_analytics";
-const BQ_TABLE    = "cf_interactions";
+const BQ_DATASET  = "civic_analytics";
+const BQ_TABLE    = "civic_interactions";
 
 /** @type {VertexAI} Vertex AI client (uses service account auth automatically) */
 const vertex = new VertexAI({ project: PROJECT_ID, location: LOCATION });
@@ -47,29 +47,34 @@ const nlpClient = new LanguageServiceClient();
 // System Instruction (injected server-side — never exposed to frontend)
 // ---------------------------------------------------------------------------
 
-const SYSTEM_INSTRUCTION = `You are StadiumIQ, a proactive AI concierge for MetroArena.
-Answer directly and concisely using ONLY the live venue data provided.
-Keep responses under 2 sentences. Never make up queue times or gate states.
-If data is missing, say so and suggest checking the venue app.`;
+const SYSTEM_INSTRUCTION = `You are ElectionIQ, a nonpartisan civic education assistant. Your job is to help citizens understand the election process clearly and factually.
+Rules:
+- Never express political opinions or favour any party/candidate
+- Be specific — use actual dates and steps from the context
+- Keep answers to 2-3 sentences for simple questions
+- For process questions, use numbered steps
+- If asked about a specific state, use state-specific rules
+- Redirect policy debates: "I focus on how elections work, not political positions"
+- Tone: clear, trustworthy, encouraging civic participation`;
 
 // ---------------------------------------------------------------------------
 // Cloud Function: stadiumIQAssist
 // ---------------------------------------------------------------------------
 
 /**
- * HTTP-triggered Cloud Function — secure AI query backend for StadiumIQ.
+ * HTTP-triggered Cloud Function — secure AI query backend for ElectionIQ.
  *
  * Pipeline:
  *  1. Validates and sanitises the incoming request
- *  2. Cloud Natural Language API: extracts entities from user query
- *  3. Vertex AI (Gemini 2.5 Flash): generates context-aware response
- *  4. BigQuery: streams full interaction record for analytics
- *  5. Returns { reply, entities } to the browser
+ *  2. Cloud Natural Language API: extracts entities from user query (state names, dates)
+ *  3. Vertex AI (Gemini 2.5 Flash): generates nonpartisan context-aware civic response
+ *  4. BigQuery: streams full interaction record to civic_analytics.civic_interactions
+ *  5. Returns { reply, entities, response_ms } to the browser
  *
  * @param {import('@google-cloud/functions-framework').Request}  req
  * @param {import('@google-cloud/functions-framework').Response} res
  */
-functions.http("stadiumIQAssist", async (req, res) => {
+functions.http("electionIQAssist", async (req, res) => {
   // CORS — allow the Cloud Run frontend domain
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -131,7 +136,7 @@ functions.http("stadiumIQAssist", async (req, res) => {
     });
 
     const contextBlock = typeof context === "object"
-      ? `LIVE VENUE DATA: ${JSON.stringify(context)}`
+      ? `LIVE ELECTION DATA: ${JSON.stringify(context)}`
       : String(context || "");
 
     const nlBlock = entities.length
@@ -171,7 +176,7 @@ functions.http("stadiumIQAssist", async (req, res) => {
     res.status(200).json({ reply, entities, response_ms: responseMs });
 
   } catch (err) {
-    console.error("[StadiumIQ:cf] Pipeline error:", err.message);
+    console.error("[ElectionIQ:cf] Pipeline error:", err.message);
     res.status(500).json({ error: "AI pipeline error. Please retry." });
   }
 });

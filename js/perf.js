@@ -54,7 +54,7 @@ export function initPerformance(app) {
  * stop(); // Records the Gemini latency to Firebase Performance dashboard
  */
 export function startTrace(traceName) {
-  if (!_perf) return () => {}; // no-op if not initialised
+  if (!_perf) {return () => {};} // no-op if not initialised
 
   try {
     const t = perfTrace(_perf, traceName);
@@ -78,7 +78,7 @@ export function startTrace(traceName) {
  * @returns {void}
  */
 export function recordMetric(traceName, metricName, value) {
-  if (!_perf || typeof value !== "number") return;
+  if (!_perf || typeof value !== "number") {return;}
   try {
     const t = perfTrace(_perf, traceName);
     t.putMetric(metricName, value);

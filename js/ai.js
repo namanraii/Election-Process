@@ -1,14 +1,14 @@
 /**
  * ai.js
  * @module ai
- * @description AI pipeline router for StadiumIQ.
+ * @description AI pipeline router for ElectionIQ.
  * Implements a two-tier request strategy:
  *
- *  Tier 1 (preferred): Google Cloud Function — `stadiumIQAssist`
+ *  Tier 1 (preferred): Google Cloud Function — `electionIQAssist`
  *    → Vertex AI Gemini 2.5 Flash (enterprise, service-account authenticated)
  *    → Cloud Natural Language API (server-side entity extraction)
  *    → BigQuery streaming insert (server-side, more reliable)
- *    URL: https://us-central1-smartstadium-493619.cloudfunctions.net/stadiumIQAssist
+ *    URL: https://us-central1-smartstadium-493619.cloudfunctions.net/electionIQAssist
  *
  *  Tier 2 (fallback): Direct Gemini AI Studio API
  *    → Used when Cloud Function is cold-starting or rate-limited
@@ -34,8 +34,7 @@ import { logger }           from "./logger.js";
  * @constant {string} Deployed Cloud Function endpoint.
  * Handles Vertex AI + NL API + BigQuery server-side.
  */
-const CF_URL =
-  "https://us-central1-smartstadium-493619.cloudfunctions.net/stadiumIQAssist";
+const CF_URL = "https://us-central1-smartstadium-493619.cloudfunctions.net/electionIQAssist";
 
 /** @constant {number} Cloud Function request timeout (includes cold-start allowance) */
 const CF_TIMEOUT_MS = 12_000;

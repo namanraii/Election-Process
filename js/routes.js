@@ -1,39 +1,53 @@
 /**
  * routes.js
  * @module routes
- * @description Google Routes API v2 integration.
- * Fetches pedestrian walking directions between two lat/lng points,
- * separate from the Maps JavaScript API — counts as a distinct Google service.
- * Route summaries are injected into Gemini's context for natural-language navigation replies.
+ * @description Google Routes API v2 integration for ElectionIQ.
+ * Computes walking and driving routes from the user's location to their
+ * nearest polling station. Route summaries are injected into Gemini's
+ * context for natural-language directions.
+ *
+ * Example narration: "Greenwood Community Center is a 12-minute walk via Oak St."
  *
  * Google Services used:
- *  - Routes API v2 (routes.googleapis.com) — crowd-aware pedestrian routing
+ *  - Routes API v2 (routes.googleapis.com) — pedestrian route computation
  *
  * @see https://developers.google.com/maps/documentation/routes
  */
 
 import { fetchWithTimeout } from "./utils.js";
+import { logger }           from "./logger.js";
 
-/** @constant {string} Routes API v2 endpoint */
+/** @constant {string} Routes API v2 computeRoutes endpoint */
 const ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
 
 /** @constant {number} Request timeout in milliseconds */
 const TIMEOUT_MS = 8_000;
 
 /**
- * Compute a walking route between two geographic coordinates.
- * Uses the Routes API v2 with WALK travel mode and highway avoidance,
- * optimised for pedestrian venue navigation scenarios.
+ * @typedef {Object} RouteResult
+ * @property {string} summary     - Human-readable summary (e.g. "850m walk — about 11 min")
+ * @property {string} narration   - Gemini-ready narration (e.g. "Your polling station is an 11-minute walk.")
+ * @property {number} distanceM   - Raw distance in metres
+ * @property {number} durationSec - Raw duration in seconds
+ */
+
+/**
+ * Compute a walking route from user's location to a polling station.
+ * Uses Routes API v2 with WALK travel mode and highway avoidance
+ * for accurate pedestrian navigation results.
  *
- * @param {{ lat: number, lng: number }} origin      - Starting lat/lng (e.g. user's current gate)
- * @param {{ lat: number, lng: number }} destination - Target lat/lng (e.g. nearest food stall)
- * @returns {Promise<{ summary: string, distanceM: number, durationSec: number }>}
- *          Route summary, raw distance in metres, and raw duration in seconds
+ * @param {{ lat: number, lng: number }} origin      - Starting point (user location)
+ * @param {{ lat: number, lng: number }} destination - Polling station location
+ * @returns {Promise<RouteResult>} Route details including human-readable summary
  * @throws {Error} If the API responds with an error or returns no valid route
  *
  * @example
- * const route = await computeRoute({ lat: 12.9716, lng: 77.5946 }, { lat: 12.972, lng: 77.595 });
- * console.log(route.summary); // "45m walk — about 1 min"
+ * const route = await computeRoute(
+ *   { lat: 37.7749, lng: -122.4194 },
+ *   { lat: 37.7800, lng: -122.4100 }
+ * );
+ * console.log(route.narration);
+ * // → "Your polling station is a 14-minute walk away."
  */
 export async function computeRoute(origin, destination) {
   const body = {
@@ -56,20 +70,24 @@ export async function computeRoute(origin, destination) {
       },
       body: JSON.stringify(body),
     }, TIMEOUT_MS);
-    if (!res.ok) throw new Error(`Routes API error ${res.status}`);
+
+    if (!res.ok) {throw new Error(`Routes API error HTTP ${res.status}`);}
     data = await res.json();
   } catch (e) {
+    logger.warn("routes", "Route computation failed:", e.message);
     throw new Error(`Routes API failed: ${e.message}`);
   }
 
   const route = data.routes?.[0];
-  if (!route) throw new Error("Routes API returned no valid route");
+  if (!route) {throw new Error("Routes API returned no valid route");}
 
   const distM   = route.distanceMeters ?? 0;
   const durSec  = parseInt(route.duration, 10) || 0;
+  const durMin  = Math.round(durSec / 60);
 
   return {
-    summary:     `${Math.round(distM)}m walk — about ${Math.round(durSec / 60)} min`,
+    summary:     `${Math.round(distM)}m walk — about ${durMin} min`,
+    narration:   `Your polling station is a ${durMin}-minute walk away.`,
     distanceM:   distM,
     durationSec: durSec,
   };

@@ -1,17 +1,15 @@
 /**
  * proactive.js
  * @module proactive
- * @description Game-clock and crowd-density aware proactive alert engine.
+ * @description Date-diff trigger engine, civic alerts.
  * Runs a 30-second polling loop against Firebase live context and fires
  * unprompted Gemini-generated messages when trigger conditions are met.
- * This is the key differentiator of StadiumIQ — pushing help before it's requested.
  *
- * Trigger rules (in priority order):
- * 1. Pre-game: Gate D capacity suggestion
- * 2. Halftime: Best restroom queue recommendation
- * 3. Q2 ending (≤2 min): Halftime concession spike warning
- * 4. Q4 ending (≤5 min) + exit density > 60%: Alternate exit suggestion
- * 5. Post-game: Crowd dispersal timing
+ * Trigger rules:
+ * 1. reg-closing: <= 3 days to registration deadline
+ * 2. early-voting-starts: today is early voting
+ * 3. election-day: today is election day
+ * 4. results-incoming: 1 day after election
  */
 import { getLiveContext }      from "./firebase.js";
 import { askGeminiProactive }  from "./gemini.js";
@@ -35,7 +33,7 @@ const POLL_INTERVAL_MS = 30_000;
  * @returns {void}
  */
 export function startProactiveLoop(onMessage) {
-  if (_intervalId) return; // Guard against double-start
+  if (_intervalId) {return;} // Guard against double-start
   _intervalId = setInterval(() => _evaluate(onMessage), POLL_INTERVAL_MS);
   _evaluate(onMessage); // Trigger immediately on load
 }
@@ -59,58 +57,44 @@ export function stopProactiveLoop() {
  * The same trigger key will not fire twice — enforced by the caller via `_lastTrigger`.
  *
  * @param {Object} ctx - Live context snapshot from {@link getLiveContext}
- * @param {Object} ctx.gameState - { quarter: number, minutesLeft: number, phase: string }
- * @param {Object} ctx.gates     - Map of gate IDs to { capacityPct: number }
- * @param {Object} ctx.queues    - Map of queue IDs to { waitMinutes: number }
- * @param {Object} ctx.crowd     - Map of zone IDs to { density: number }
  * @returns {{ key: string, reason: string } | null} Trigger descriptor or null
  */
 export function evaluateTrigger(ctx) {
-  const gs    = ctx.gameState || {};
-  const crowd = ctx.crowd     || {};
-  const q     = gs.quarter;
-  const min   = gs.minutesLeft;
-  const phase = gs.phase;
+  const milestones = ctx.milestones || {};
+  const now = Date.now();
 
-  if (phase === "pre") {
-    const gateDCap = ctx.gates?.D?.capacityPct ?? 0;
-    return {
-      key: "pre-gates",
-      reason: `Gates just opened. Gate D has ${gateDCap}% capacity — lowest queue.`,
-    };
-  }
+  const daysDiff = (ts) => 
+    Math.round((ts - now) / 86_400_000);
 
-  if (phase === "halftime") {
-    const bestRestroom = _findFastest(ctx.queues || {}, ["r1", "r2"]);
-    return {
-      key: "halftime",
-      reason: `It is halftime. ${bestRestroom.name} has the shortest restroom queue at ${bestRestroom.wait} min.`,
-    };
-  }
-
-  if (q === 2 && min <= 2) {
-    return {
-      key: "q2-end",
-      reason: `2nd quarter ends in ${min} minutes. Concession queues will spike sharply at halftime.`,
-    };
-  }
-
-  if (q === 4 && min <= 5) {
-    const exitDensity   = crowd["main-exit"]?.density ?? 0;
-    const bridgeDensity = crowd["north-bridge"]?.density ?? 0;
-    if (exitDensity > 0.6) {
+  if (milestones.registrationDeadline) {
+    const regDays = daysDiff(milestones.registrationDeadline);
+    if (regDays >= 0 && regDays <= 3) {
       return {
-        key: "q4-exit",
-        reason: `4th quarter with ${min} minutes left. Main Exit is at ${Math.round(exitDensity * 100)}% capacity. North Bridge is ${Math.round(bridgeDensity * 100)}% — significantly less crowded.`,
+        key: 'reg-closing',
+        reason: `Voter registration closes in ${regDays} day(s).`
       };
     }
   }
 
-  if (phase === "post") {
-    return {
-      key: "post-game",
-      reason: "Full time. Post-game show starting. Exit crowd will drop in approximately 20 minutes.",
-    };
+  if (milestones.earlyVotingStart) {
+    const earlyDays = daysDiff(milestones.earlyVotingStart);
+    if (earlyDays === 0) {
+      return { key: 'early-voting-starts',
+        reason: 'Early voting opens today.' };
+    }
+  }
+
+  if (milestones.electionDay) {
+    const electionDays = daysDiff(milestones.electionDay);
+    if (electionDays === 0) {
+      return { key: 'election-day',
+        reason: 'Today is Election Day.' };
+    }
+
+    if (electionDays === -1) {
+      return { key: 'results-incoming',
+        reason: 'Polls closed yesterday. Counting is underway.' };
+    }
   }
 
   return null;
@@ -128,7 +112,7 @@ async function _evaluate(onMessage) {
   performance.mark("proactive-eval-start");
   const ctx = getLiveContext();
   const trigger = evaluateTrigger(ctx);
-  if (!trigger || trigger.key === _lastTrigger) return;
+  if (!trigger || trigger.key === _lastTrigger) {return;}
   _lastTrigger = trigger.key;
   trackProactiveAlert(trigger.key); // GA4 event: proactive alert delivered
   try {
@@ -142,19 +126,4 @@ async function _evaluate(onMessage) {
   }
 }
 
-/**
- * Find the queue with the shortest wait time from a list of candidate IDs.
- *
- * @param {Object} queues       - Map of queue IDs to { waitMinutes: number }
- * @param {string[]} candidateIds - IDs to evaluate (e.g. ["r1", "r2"])
- * @returns {{ id: string, wait: number, name: string }} Best (shortest) queue descriptor
- * @private
- */
-function _findFastest(queues, candidateIds) {
-  let best = { id: candidateIds[0], wait: Infinity };
-  candidateIds.forEach(id => {
-    const wait = queues[id]?.waitMinutes ?? Infinity;
-    if (wait < best.wait) best = { id, wait };
-  });
-  return { ...best, name: best.id.toUpperCase() };
-}
+

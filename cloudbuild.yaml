@@ -18,20 +18,20 @@ steps:
     args: ['install', '--prefix', 'functions']
     waitFor: ['run-tests']
 
-  # Step 3: Deploy Cloud Function (stadiumIQAssist)
+  # Step 3: Deploy Cloud Function (electionIQAssist)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-cloud-function'
     entrypoint: gcloud
     args:
       - functions
       - deploy
-      - stadiumIQAssist
+      - electionIQAssist
       - '--runtime=nodejs20'
       - '--trigger-http'
       - '--allow-unauthenticated'
       - '--region=us-central1'
       - '--source=functions/'
-      - '--entry-point=stadiumIQAssist'
+      - '--entry-point=electionIQAssist'
       - '--project=$PROJECT_ID'
       - '--set-env-vars=GCP_PROJECT=$PROJECT_ID'
     waitFor: ['install-functions']
@@ -42,9 +42,18 @@ steps:
     args:
       - '-c'
       - |
-        sed -i "s/__GEMINI_API_KEY__/$$GEMINI_API_KEY/g"   config.js
-        sed -i "s/__FIREBASE_API_KEY__/$$FIREBASE_API_KEY/g" config.js
-        sed -i "s/__MAPS_API_KEY__/$$MAPS_API_KEY/g"       config.js
+        sed -i "s/__GEMINI_API_KEY__/$_GEMINI_API_KEY/g"   config.js
+        sed -i "s/__FIREBASE_API_KEY__/$_FIREBASE_API_KEY/g" config.js
+        sed -i "s/__FIREBASE_AUTH_DOMAIN__/$_FIREBASE_AUTH_DOMAIN/g" config.js
+        sed -i "s/__FIREBASE_PROJECT_ID__/$_FIREBASE_PROJECT_ID/g" config.js
+        sed -i "s/__FIREBASE_STORAGE__/$_FIREBASE_STORAGE/g" config.js
+        sed -i "s/__FIREBASE_SENDER_ID__/$_FIREBASE_SENDER_ID/g" config.js
+        sed -i "s/__FIREBASE_APP_ID__/$_FIREBASE_APP_ID/g" config.js
+        sed -i "s/__FIREBASE_MEASUREMENT__/$_FIREBASE_MEASUREMENT/g" config.js
+        sed -i "s/__FIREBASE_DB_URL__/$_FIREBASE_DB_URL/g" config.js
+        sed -i "s/__MAPS_API_KEY__/$_MAPS_API_KEY/g"       config.js
+        sed -i "s/__ROUTES_API_KEY__/$_ROUTES_API_KEY/g"     config.js
+        sed -i "s|__CF_URL__|https://us-central1-$PROJECT_ID.cloudfunctions.net/electionIQAssist|g" js/ai.js
     waitFor: ['run-tests']
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -53,7 +62,7 @@ steps:
     args:
       - run
       - deploy
-      - smartstadium-app
+      - electioniq-app
       - '--source=.'
       - '--region=us-central1'
       - '--allow-unauthenticated'
@@ -63,6 +72,17 @@ steps:
 
 substitutions:
   _REGION: us-central1
+  _GEMINI_API_KEY: ""
+  _FIREBASE_API_KEY: ""
+  _FIREBASE_AUTH_DOMAIN: ""
+  _FIREBASE_PROJECT_ID: ""
+  _FIREBASE_STORAGE: ""
+  _FIREBASE_SENDER_ID: ""
+  _FIREBASE_APP_ID: ""
+  _FIREBASE_MEASUREMENT: ""
+  _FIREBASE_DB_URL: ""
+  _MAPS_API_KEY: ""
+  _ROUTES_API_KEY: ""
 
 options:
   logging: CLOUD_LOGGING_ONLY

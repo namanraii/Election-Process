@@ -1,9 +1,14 @@
 /**
  * nlp.js
  * @module nlp
- * @description Google Cloud Natural Language API integration.
+ * @description Google Cloud Natural Language API integration for ElectionIQ.
  * Performs entity extraction and sentiment analysis on user queries
- * to enrich the context passed to Gemini for more accurate, specific responses.
+ * to enrich the context passed to Gemini for more accurate, state-specific responses.
+ *
+ * Examples of extracted entities:
+ *  - "How do I vote in California?" → LOCATION: California
+ *  - "When is the Senate runoff?"  → EVENT: Senate runoff
+ *  - Entities are injected into Gemini context for targeted civic answers.
  *
  * This creates a two-stage AI pipeline:
  *  1. Natural Language API → entity extraction + sentiment (lightweight, fast)
@@ -54,13 +59,13 @@ const NL_TIMEOUT_MS = 5_000;
  * @returns {Promise<NLPAnnotation>} Extracted entities and sentiment, or empty defaults
  *
  * @example
- * const annotation = await analyseQuery("How long is the queue at Gate D food court?");
- * // annotation.locations → ["Gate D"]
- * // annotation.entities → [{ name: "Gate D", type: "LOCATION", salience: 0.8 }, ...]
- * // annotation.sentiment → 0.1 (slightly positive)
+ * const annotation = await analyseQuery("How do I vote in California?");
+ * // annotation.locations → ["California"]
+ * // annotation.entities  → [{ name: "California", type: "LOCATION", salience: 0.9 }, ...]
+ * // annotation.sentiment → 0.1 (neutral positive)
  */
 export async function analyseQuery(text) {
-  if (!text || !window.ENV?.MAPS_API_KEY) return _emptyAnnotation();
+  if (!text || !window.ENV?.MAPS_API_KEY) {return _emptyAnnotation();}
 
   try {
     const [entitiesRes, sentimentRes] = await Promise.all([
@@ -110,7 +115,7 @@ export async function analyseQuery(text) {
  * // → "NL Entities: Gate D (LOCATION, salience: 0.80)\nDetected locations: Gate D\nQuery sentiment: neutral"
  */
 export function formatAnnotationForContext(annotation) {
-  if (!annotation?.entities?.length) return "";
+  if (!annotation?.entities?.length) {return "";}
 
   const topEntities = annotation.entities
     .slice(0, 5)
@@ -123,8 +128,8 @@ export function formatAnnotationForContext(annotation) {
                                     "neutral";
 
   const parts = [`NL Entities: ${topEntities}`];
-  if (annotation.locations.length) parts.push(`Detected locations: ${annotation.locations.join(", ")}`);
-  if (annotation.events.length)    parts.push(`Detected events: ${annotation.events.join(", ")}`);
+  if (annotation.locations.length) {parts.push(`Detected locations: ${annotation.locations.join(", ")}`);}
+  if (annotation.events.length)    {parts.push(`Detected events: ${annotation.events.join(", ")}`);}
   parts.push(`Query sentiment: ${sentimentLabel}`);
 
   return parts.join("\n");

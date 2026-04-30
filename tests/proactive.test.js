@@ -1,87 +1,125 @@
-import { evaluateTrigger, stopProactiveLoop } from "../js/proactive.js";
+/**
+ * proactive.test.js
+ * @description Unit tests for the ElectionIQ date-diff proactive trigger engine.
+ * Tests all 5 trigger conditions plus edge cases (boundary days, empty context, null inputs).
+ */
 
-afterAll(() => stopProactiveLoop());
+import { jest } from "@jest/globals";
 
-const baseCtx = {
-  queues:    { r1: { waitMinutes: 2 }, r2: { waitMinutes: 5 } },
-  gates:     { D: { capacityPct: 18 } },
-  crowd:     { "main-exit": { density: 0.75 }, "north-bridge": { density: 0.2 } },
-};
+jest.unstable_mockModule("../js/firebase.js", () => ({
+  getLiveContext: jest.fn(() => ({})),
+  initFirebase:   jest.fn(),
+}));
+jest.unstable_mockModule("../js/analytics.js", () => ({
+  trackProactiveAlert: jest.fn(),
+  trackChatMessage:    jest.fn(),
+  trackPollingPlaceSearch: jest.fn(),
+  initAnalytics:       jest.fn(),
+}));
+jest.unstable_mockModule("../js/perf.js", () => ({
+  startTrace:    jest.fn(() => jest.fn()),
+  recordMetric:  jest.fn(),
+  initPerformance: jest.fn(),
+}));
+jest.unstable_mockModule("../js/gemini.js", () => ({
+  askGeminiProactive: jest.fn(async () => "Test alert message"),
+  askGemini:          jest.fn(async () => "Test response"),
+}));
+jest.unstable_mockModule("../js/logger.js", () => ({
+  logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(), setLevel: jest.fn() },
+}));
 
-describe("evaluateTrigger — game phases", () => {
-  test("pre-game fires with least-crowded gate info", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 0, minutesLeft: 30, phase: "pre" } };
+const { evaluateTrigger } = await import("../js/proactive.js");
+
+const ONE_DAY = 86_400_000;
+const now     = Date.now();
+
+describe("evaluateTrigger — proactive civic alerts", () => {
+
+  // ---- reg-closing --------------------------------------------------------
+  test("fires 'reg-closing' when deadline is exactly today (0 days)", () => {
+    const ctx = { milestones: { registrationDeadline: now } };
+    expect(evaluateTrigger(ctx)?.key).toBe("reg-closing");
+  });
+
+  test("fires 'reg-closing' when deadline is 1 day away", () => {
+    const ctx = { milestones: { registrationDeadline: now + ONE_DAY } };
+    expect(evaluateTrigger(ctx)?.key).toBe("reg-closing");
+  });
+
+  test("fires 'reg-closing' when deadline is 2 days away", () => {
+    const ctx = { milestones: { registrationDeadline: now + 2 * ONE_DAY } };
+    expect(evaluateTrigger(ctx)?.key).toBe("reg-closing");
+  });
+
+  test("fires 'reg-closing' when deadline is 3 days away (boundary)", () => {
+    const ctx = { milestones: { registrationDeadline: now + 3 * ONE_DAY } };
+    expect(evaluateTrigger(ctx)?.key).toBe("reg-closing");
+  });
+
+  test("does NOT fire 'reg-closing' when deadline is 4+ days away", () => {
+    const ctx = { milestones: { registrationDeadline: now + 4 * ONE_DAY } };
     const trigger = evaluateTrigger(ctx);
-    expect(trigger?.key).toBe("pre-gates");
-    expect(trigger?.reason).toContain("Gate D");
+    expect(trigger?.key).not.toBe("reg-closing");
   });
 
-  test("halftime fires with restroom suggestion", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 2, minutesLeft: 0, phase: "halftime" } };
+  test("'reg-closing' reason includes days remaining", () => {
+    const ctx = { milestones: { registrationDeadline: now + ONE_DAY } };
     const trigger = evaluateTrigger(ctx);
-    expect(trigger?.key).toBe("halftime");
-    expect(trigger?.reason).toContain("R1");
+    expect(trigger?.reason).toMatch(/registration closes in/i);
   });
 
-  test("post-game fires at full time", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 4, minutesLeft: 0, phase: "post" } };
-    expect(evaluateTrigger(ctx)?.key).toBe("post-game");
-  });
-});
-
-describe("evaluateTrigger — quarter triggers", () => {
-  test("q2-end fires when Q2 minutesLeft ≤ 2", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 2, minutesLeft: 1, phase: "live" } };
-    expect(evaluateTrigger(ctx)?.key).toBe("q2-end");
+  // ---- early-voting-starts ------------------------------------------------
+  test("fires 'early-voting-starts' when earlyVotingStart is today", () => {
+    const ctx = { milestones: { earlyVotingStart: now } };
+    expect(evaluateTrigger(ctx)?.key).toBe("early-voting-starts");
   });
 
-  test("q2-end fires at exactly minutesLeft = 2", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 2, minutesLeft: 2, phase: "live" } };
-    expect(evaluateTrigger(ctx)?.key).toBe("q2-end");
+  test("does NOT fire 'early-voting-starts' when earlyVotingStart is tomorrow", () => {
+    const ctx = { milestones: { earlyVotingStart: now + ONE_DAY } };
+    const trigger = evaluateTrigger(ctx);
+    expect(trigger?.key).not.toBe("early-voting-starts");
   });
 
-  test("q2-end does NOT fire when minutesLeft = 3", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 2, minutesLeft: 3, phase: "live" } };
+  // ---- election-day -------------------------------------------------------
+  test("fires 'election-day' when today is election day", () => {
+    const ctx = { milestones: { electionDay: now } };
+    expect(evaluateTrigger(ctx)?.key).toBe("election-day");
+  });
+
+  test("does NOT fire 'election-day' when election is tomorrow", () => {
+    const ctx = { milestones: { electionDay: now + ONE_DAY } };
+    const trigger = evaluateTrigger(ctx);
+    expect(trigger?.key).not.toBe("election-day");
+  });
+
+  // ---- results-incoming ---------------------------------------------------
+  test("fires 'results-incoming' when election was yesterday", () => {
+    const ctx = { milestones: { electionDay: now - ONE_DAY } };
+    expect(evaluateTrigger(ctx)?.key).toBe("results-incoming");
+  });
+
+  test("does NOT fire 'results-incoming' when election was 2+ days ago", () => {
+    const ctx = { milestones: { electionDay: now - 2 * ONE_DAY } };
+    const trigger = evaluateTrigger(ctx);
+    expect(trigger?.key).not.toBe("results-incoming");
+  });
+
+  // ---- null / empty cases ------------------------------------------------
+  test("returns null when no conditions are met", () => {
+    const ctx = { milestones: { registrationDeadline: now + 10 * ONE_DAY } };
     expect(evaluateTrigger(ctx)).toBeNull();
   });
 
-  test("q4-exit fires when Q4 ends + exit crowded", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 4, minutesLeft: 3, phase: "live" } };
-    expect(evaluateTrigger(ctx)?.key).toBe("q4-exit");
-  });
-
-  test("q4-exit does NOT fire when exit density ≤ 0.6", () => {
-    const lowDensityCtx = {
-      ...baseCtx,
-      crowd: { "main-exit": { density: 0.5 }, "north-bridge": { density: 0.2 } },
-      gameState: { quarter: 4, minutesLeft: 3, phase: "live" },
-    };
-    expect(evaluateTrigger(lowDensityCtx)).toBeNull();
-  });
-
-  test("q4-exit does NOT fire beyond 5 minutes left", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 4, minutesLeft: 6, phase: "live" } };
-    expect(evaluateTrigger(ctx)).toBeNull();
-  });
-
-  test("returns null when Q1 — no trigger condition", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 1, minutesLeft: 14, phase: "live" } };
-    expect(evaluateTrigger(ctx)).toBeNull();
-  });
-});
-
-describe("evaluateTrigger — edge cases", () => {
   test("returns null for empty context", () => {
     expect(evaluateTrigger({})).toBeNull();
   });
 
-  test("trigger reason includes density percentage", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 4, minutesLeft: 3, phase: "live" } };
-    expect(evaluateTrigger(ctx)?.reason).toContain("75%");
+  test("returns null for null input gracefully", () => {
+    expect(evaluateTrigger({ milestones: null })).toBeNull();
   });
 
-  test("trigger reason includes alternate route info", () => {
-    const ctx = { ...baseCtx, gameState: { quarter: 4, minutesLeft: 3, phase: "live" } };
-    expect(evaluateTrigger(ctx)?.reason).toContain("North Bridge");
+  test("returns null when milestones are undefined", () => {
+    expect(evaluateTrigger({ milestones: {} })).toBeNull();
   });
 });

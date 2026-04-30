@@ -1,29 +1,23 @@
-# StadiumIQ — Proactive Stadium Concierge
+# ElectionIQ — Nonpartisan Civic AI Assistant
 
-> An AI-powered assistant that predicts attendee needs at large-scale sporting venues — before they even ask.
+> **Note**: This project was created specifically for the **PromptWars 2** competition submission.
+
+> An AI-powered assistant that helps citizens understand the election process, timelines, and voting steps — proactively and factually.
 
 ## 🔗 Live Demo
-[https://github.com/namanraii/StadiumIQ](https://github.com/namanraii/StadiumIQ)
+
+[https://electioniq.run.app](https://electioniq.run.app)
 
 ---
 
 ## 💡 The Vision
 
-StadiumIQ reduces "time-to-seat" and post-game exit delays by proactively routing 60,000+ attendees based on real-time crowd density and game state. Attendees never need to search for help — the assistant finds them.
+ElectionIQ demystifies democracy. Millions of eligible voters don't participate because the registration and voting process is confusing, opaque, or intimidating. ElectionIQ solves this by combining Google's AI, Firebase, and Maps ecosystem to deliver:
 
-It leverages Google's AI, Maps, and Firebase ecosystem to deliver a seamless, context-aware venue experience through a split-screen web interface: a live crowd map on the left, an intelligent chat assistant on the right.
-
----
-
-## 🏟️ Problem Statement
-
-Large sporting events face systemic challenges:
-- **Crowd bottlenecks** at gates and concession stands
-- **Long queue wait times** without real-time guidance
-- **Poor exit coordination** at match end
-- **Reactive (not proactive)** venue staff and information systems
-
-StadiumIQ solves this by combining live sensor data, game clock awareness, and AI to send unprompted, timely alerts.
+- **Proactive civic alerts** — "Registration closes in 2 days — here's how to register"
+- **Contextual AI answers** — state-specific, date-aware, factual election guidance
+- **Interactive timeline** — click any milestone date to instantly learn about it
+- **Polling place finder** — nearest voting locations on a live map with walking time
 
 ---
 
@@ -31,97 +25,92 @@ StadiumIQ solves this by combining live sensor data, game clock awareness, and A
 
 ```
 Firebase Realtime DB ──► Proactive Engine ──► Gemini 2.5 Flash ──► Chat UI
-       │  (gameState, crowd,       │  (trigger on Q4/halftime)         ▲
-       │   gates, queues)          └────────────────────────────────────┘
-       │                                                           User Query
-       └──► Maps JS API (live crowd overlay)          Intent Classifier
-                                                           │
-                                               Routes API (walking path)
+       │  (milestones,          │  (date-diff triggers)                  ▲
+       │   phases, faqs)        └────────────────────────────────────────┘
+       │                                                          User Query
+       └──► Timeline Widget (left panel)             Intent Classifier
+                                                          │
+                                              NL API (state/date entities)
+                                                          │
+                                             Maps JS API (polling places)
 ```
 
-**Logic Flow:**
-```mermaid
-graph LR
-  A[Firebase RT DB] -->|gameState + crowd + queues| B[Proactive Engine]
-  B -->|trigger condition met| C[Gemini 2.5 Flash]
-  C -->|natural language alert| D[Attendee Chat]
-  D -->|user query| E[Intent Classifier]
-  E -->|navigation intent| F[Routes API]
-  E -->|queue intent| A
-  F -->|route summary| C
+**Request Pipeline:**
 ```
-
----
-
-## ☁️ Google Services — Enterprise Architecture
-
-StadiumIQ employs an **Enterprise Gateway Pattern** to secure API keys and orchestrate complex AI workflows:
-
-```
-User Query (Frontend)
+User Query
   │
-  ├─── Cloud Function (stadiumIQAssist) ◄── Secure Backend Gateway
-       │
-       ├─── Cloud Natural Language API ──► entity extraction & sentiment analysis
-       │
-       ├─── Vertex AI ───────────────────► Gemini 2.5 Flash NLU response
-       │                                   (Enterprise Service Account Auth)
-       │
-       └─── BigQuery Streaming Insert ───► logs complete interaction record
-
-Navigation Intents (Frontend fallback)
-  └─── Routes API ───────────────────────► walking directions (WALK mode)
-
-Firebase Realtime DB ──► live game state triggers → Proactive Alert Engine
-                                                   → BigQuery venue snapshots
-                                                   → Google Maps overlay refresh
-
-Firebase Auth ──► anonymous UID → scopes GA4 events + Performance traces
-Firebase Analytics (GA4) ──► tracks event funnel (`chat_message_sent`, etc.)
-Firebase Performance ──► measures latency across AI pipeline and Maps rendering
-Cloud Run + Cloud Build ──► CI/CD to Nginx serverless hosting (Artifact Registry)
-Secret Manager ──► Securely injects Maps/Firebase keys at build time
+  ├─► Intent Classifier (intent.js) — registration / voting / location / glossary / …
+  │
+  ├─► Cloud NL API — entity extraction (state names, election offices, dates)
+  │
+  ├─► Cloud Function (electionIQAssist) — secure backend gateway
+  │     ├─► Vertex AI Gemini 2.5 Flash — civic response generation
+  │     └─► BigQuery Streaming Insert — logs full interaction record
+  │
+  └─► Response ──► UI + BigQuery analytics
 ```
-
-| Service | Role in Workflow |
-|---|---|
-| **Cloud Functions** | HTTP trigger acting as the secure gateway for the AI pipeline (`functions/index.js`). |
-| **Vertex AI** | Enterprise Gemini 2.5 Flash accessed purely via Service Account from the Cloud Function. No keys exposed in browser. |
-| **Cloud Natural Language API** | Stage 1: entity extraction (`analyzeEntities`) + sentiment (`analyzeSentiment`) on every user query — entities enrich Gemini context |
-| **BigQuery (Streaming Inserts)** | Stage 4: every interaction logged to `stadium_analytics.user_interactions`; venue snapshots to `venue_snapshots` table on every Firebase gamestate change |
-| **Firebase Realtime Database** | Live backbone: `onValue()` listeners push instant updates to map overlay, proactive alert engine, and BigQuery snapshots |
-| **Routes API v2** | Navigation intents: `computeRoutes` with `WALK` mode; route summary injected into Gemini context for natural-language directions |
-| **Maps JavaScript API** | Satellite venue map with custom SVG gate markers; capacity colour updated live from Firebase gate data |
-| **Firebase Authentication** | Anonymous `signInAnonymously()` session on load; UID scopes GA4 events and Performance traces across the session |
-| **Google Analytics 4 (Firebase)** | Tracks `chat_message_sent` (intent category), `quick_action_chip`, `proactive_alert_shown`, `route_computed` — full funnel visibility |
-| **Firebase Performance Monitoring** | Custom `gemini_response` trace wraps every Gemini call; `response_length` metric logged per interaction |
-| **Cloud Run** | Nginx container; auto-scales to handle concurrent stadium event traffic spikes |
-| **Cloud Build** | CI/CD: source-based build from `gcloud run deploy --source .`; container stored in Artifact Registry |
-
-### Production Architecture with Extended Google Services
-In a production deployment at scale, StadiumIQ would integrate additional Google services:
-
-```
-IoT Sensors → Pub/Sub → Cloud Functions → Firebase Realtime DB → StadiumIQ
-                                     ↘ BigQuery (historical analytics)
-Gemini API ← Firebase ← Cloud Run   ← Google Maps Platform
-                                     ↘ Vertex AI (crowd prediction model)
-```
-
-- **Cloud Pub/Sub**: Ingest real-time IoT sensor data streams from 10,000+ seat sensors
-- **Cloud Functions**: Serverless event processors for sensor data → Firebase writes
-- **BigQuery**: Store and analyse historical crowd patterns across multiple events
-- **Vertex AI**: Train and serve predictive crowd density models for pre-emptive routing
-
 
 ---
 
-## ✨ Features
+## ☁️ Google Services — Comprehensive Integration
 
-- **🚨 Proactive Exit Warning** — Detects Q4 ending + crowded exits → auto-suggests alternate routes unprompted
-- **🍟 Halftime Concession Guidance** — Predicts queue spikes before they happen and routes to shortest queue
-- **🚪 Gate Capacity Routing** — Real-time colour overlay (Low/Medium/High) + least-crowded gate suggestion
-- **🤖 Venue Concierge** — Ask anything: restrooms, first aid, schedule, parking, lost & found
+ElectionIQ uses **10+ Google services**, each doing meaningful work in the user-facing pipeline:
+
+| Service | Role in ElectionIQ |
+|---|---|
+| **Vertex AI / Gemini 2.5 Flash** | Core NLU engine. Server-side via Cloud Function with service account auth. Generates nonpartisan, context-aware civic answers with numbered steps and state-specific rules. |
+| **Cloud Functions** | Secure HTTP gateway (`electionIQAssist`). Orchestrates the Vertex AI + NL API + BigQuery pipeline. No Vertex AI keys ever reach the browser. |
+| **Cloud Natural Language API** | Entity extraction on every user query. "How do I vote in California?" → LOCATION: California → Gemini receives state-specific context for accurate state rules. |
+| **BigQuery** | Two streaming tables: `civic_interactions` (every query + AI response) and `milestone_snapshots` (election phase time-series). Powers the admin analytics panel (`?admin=1`). |
+| **Firebase Realtime Database** | Backbone for live election data. `onValue()` listeners on `milestones`, `phases`, `faqs`, `alerts` nodes update the timeline widget in real time. |
+| **Maps JavaScript API + Places API** | Geocodes user location → finds nearby polling stations via Places text search → renders clickable markers with Open/Early/Closed status overlays. |
+| **Routes API v2** | Computes walking time from user to nearest polling station. Route narration injected into Gemini context: "Your polling station is a 12-minute walk away." |
+| **Firebase Authentication** | Anonymous `signInAnonymously()` session on load. UID scopes GA4 events and Performance traces across the session. |
+| **Google Analytics 4 (Firebase)** | Tracks `civic_question_asked` (intent), `milestone_alert_shown` (trigger key), `polling_place_found`, `milestone_clicked` — complete civic engagement funnel. |
+| **Firebase Performance Monitoring** | Custom `gemini_response` and `cloud_function_response` traces wrap every AI call. Latency metrics logged per interaction. |
+| **Cloud Run** | Nginx container auto-scales to handle election-day traffic spikes. Source-based deploy via `gcloud run deploy --source .`. |
+| **Cloud Build** | CI/CD pipeline builds container from source on every `gcloud run deploy`. Container stored in Artifact Registry. |
+
+---
+
+## ✨ The 5 Feature Pillars
+
+### 1. Proactive Civic Alert Engine
+Checks the current date against Firebase milestone timestamps every 60 seconds. Triggers unprompted Gemini-generated alerts:
+- `reg-closing` — Registration closes in ≤3 days
+- `early-voting-starts` — Early voting begins today
+- `election-day` — Today is Election Day with polling hours
+- `results-incoming` — Polls closed yesterday, counting begins
+- `certification` — Results certification in ≤2 days
+
+Each trigger fires **once per session** (guarded by `_lastTrigger`).
+
+### 2. Step-by-Step AI Chat (Gemini 2.5 Flash)
+Nonpartisan civic education assistant with 7 intent categories:
+- `registration` — Voter registration, eligibility, deadlines
+- `location` — Polling place finder (triggers map panel)
+- `voting` — Ballots, mail-in, absentee, drop boxes
+- `process` — How elections work, step-by-step
+- `results` — Vote counting, certification, recounts
+- `glossary` — Electoral College, precinct, caucus
+- `id` — ID requirements by state
+
+### 3. Interactive Election Timeline
+Left-panel vertical timeline rendered from Firebase `milestones`. Clicking any milestone date triggers a `quickAsk()` with a pre-defined civic question. Updates in real-time via `onValue()`.
+
+### 4. Polling Place Finder (Maps + Places API)
+When a "location" intent is detected:
+- Geolocates the user via browser Geolocation API
+- Queries Places API for nearby voting locations
+- Renders up to 5 markers with Open/Early/Closed status
+- Injects walking time from Routes API into Gemini context
+
+### 5. Admin Analytics Dashboard (`?admin=1`)
+Hidden admin panel showing real-time BigQuery analytics:
+- Total queries per session
+- Top intent category
+- Average response latency
+- Proactive alerts delivered
 
 ---
 
@@ -129,18 +118,24 @@ Gemini API ← Firebase ← Cloud Run   ← Google Maps Platform
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/namanraii/StadiumIQ.git
-cd StadiumIQ
+git clone https://github.com/namanraii/ElectionIQ.git
+cd ElectionIQ
 
-# 2. Configure API keys
-#    Open config.js and replace placeholder values with your real API keys
+# 2. Configure API keys (copy the example, fill in real values)
+cp config.js.example config.js
+# Edit config.js with your Firebase, Maps, and Gemini API keys
 
 # 3. Seed Firebase Realtime Database
-#    Import data/firebase-seed.json into your Firebase Realtime DB
+# Import data/firebase-seed.json into your Firebase project
+# Firebase Console → Realtime Database → Import JSON
 
 # 4. Start a local static server
-python3 -m http.server 3000
+npm run serve
 # Then open http://localhost:3000
+
+# 5. (Optional) Deploy Cloud Function
+cd functions && npm install
+gcloud functions deploy electionIQAssist --runtime nodejs20 --trigger-http --allow-unauthenticated
 ```
 
 ---
@@ -150,49 +145,100 @@ python3 -m http.server 3000
 ```bash
 npm install
 npm test
-# Remove node_modules before committing!
+# Expected output: 6 suites, 55+ tests, all passing
+
+npm run coverage
+# Generates coverage report in /coverage directory
 ```
 
----
-
-## 📋 Assumptions
-
-- Venue floor plan is mocked via `data/stadium.json`
-- Queue and crowd data is seeded in Firebase to simulate live IoT sensor updates
-- Updating `gameState.quarter` or `gameState.minutesLeft` in Firebase triggers proactive messages in real time (demonstrable live)
-- In production, Firebase would be populated by real IoT sensors, ticketing APIs, and POS system feeds
+### Test suites:
+| File | What it covers |
+|---|---|
+| `intent.test.js` | 25+ civic intent classification cases across all 7 categories |
+| `proactive.test.js` | All 5 date-diff triggers + edge cases (today = deadline, tomorrow = deadline) |
+| `timeline.test.js` | Milestone rendering, status updates (past/current/upcoming) |
+| `nlp.test.js` | `formatAnnotationForContext` with civic entity examples |
+| `utils.test.js` | `sanitise`, `clamp`, `uniqueId` (all pure functions) |
+| `routes.test.js` | Mock fetch for walking route computation |
 
 ---
 
 ## 🔒 Security
 
-- **No API keys committed** — Keys are stored in `.env` (gitignored) and loaded via `config.js`
-- **Firebase rules**: Read-only access for all public collections
-- **Input sanitization**: HTML characters stripped, 300-character limit enforced on all user input
-- **Maps key restricted**: Limited to specific domain referrers to prevent unauthorized usage
+- **No API keys committed** — Keys stored in `config.js` (gitignored). See `.env.example`.
+- **Vertex AI never browser-exposed** — All Vertex AI calls go through the Cloud Function with service account authentication.
+- **Input sanitisation** — HTML characters stripped (`<>&"'\``) and 300-char limit enforced in both `utils.sanitise()` (client) and `index.js` (server-side Cloud Function).
+- **Firebase rules** — Read-only for all public civic data collections.
+- **Maps API key restricted** — Limited to specific domain referrers to prevent unauthorised usage.
+- **CSP header** — Strict Content-Security-Policy in `<meta>` blocks XSS vectors.
 
 ---
 
 ## 📁 Project Structure
 
 ```
-StadiumIQ/
-├── index.html          # Main SPA with accessible layout (ARIA roles)
-├── config.js           # Runtime environment variable injection
+ElectionIQ/
+├── index.html              # SPA: timeline left panel, AI chat right panel
+├── config.js               # Runtime ENV injection (gitignored — see .env.example)
 ├── css/
-│   └── style.css       # Premium glassmorphic light-mode UI
+│   └── style.css           # Premium civic green-blue UI + admin panel styles
 ├── js/
-│   ├── app.js          # Main orchestrator
-│   ├── gemini.js       # Gemini API client (context-enriched)
-│   ├── firebase.js     # Realtime DB listeners
-│   ├── maps.js         # Google Maps + crowd overlay
-│   ├── routes.js       # Routes API integration
-│   ├── intent.js       # Regex-based intent classifier
-│   └── proactive.js    # Game-clock-aware push alert engine
+│   ├── app.js              # Main orchestrator — startup, event wiring, handleSubmit
+│   ├── gemini.js           # Gemini 2.5 Flash client, civic system prompt, response cache
+│   ├── firebase.js         # Realtime DB listeners (milestones, phases, faqs, alerts)
+│   ├── maps.js             # Maps JS API + Places API — polling station finder
+│   ├── routes.js           # Routes API v2 — walking time to polling station
+│   ├── intent.js           # Regex intent classifier (7 civic categories)
+│   ├── proactive.js        # Date-diff trigger engine — civic proactive alerts
+│   ├── timeline.js         # Election timeline widget renderer
+│   ├── nlp.js              # Cloud Natural Language API — entity + sentiment
+│   ├── ai.js               # Two-tier AI router (Cloud Function → Gemini fallback)
+│   ├── analytics.js        # GA4 civic event tracking
+│   ├── bigquery.js         # BigQuery streaming inserts — civic_analytics dataset
+│   ├── auth.js             # Firebase anonymous auth
+│   ├── perf.js             # Firebase Performance traces
+│   ├── ui.js               # DOM rendering, ARIA updates, alert banner
+│   ├── logger.js           # Centralised structured logging (no direct console calls)
+│   └── utils.js            # fetchWithTimeout, sanitise, uniqueId, clamp
 ├── data/
-│   ├── stadium.json    # Venue layout (gates, food, restrooms)
-│   └── firebase-seed.json # Demo sensor data for Firebase
-├── tests/              # Jest unit tests
-├── Dockerfile          # Nginx container for Cloud Run
-└── nginx.conf          # Port 8080 config for Cloud Run
+│   ├── election.json       # Civic domain data: phases, glossary, FAQs
+│   └── firebase-seed.json  # Milestone timestamps for Firebase Realtime DB demo
+├── functions/
+│   ├── index.js            # Cloud Function: electionIQAssist (Vertex AI + NL + BigQuery)
+│   └── package.json        # Cloud Function dependencies
+├── tests/
+│   ├── intent.test.js      # 25+ intent classification unit tests
+│   ├── proactive.test.js   # Proactive trigger unit tests
+│   ├── timeline.test.js    # Timeline milestone tests
+│   ├── nlp.test.js         # NL annotation formatting tests
+│   ├── utils.test.js       # Pure utility function tests
+│   └── routes.test.js      # Mock fetch route tests
+├── Dockerfile              # Nginx container for Cloud Run
+└── nginx.conf              # Port 8080, SPA routing config
 ```
+
+---
+
+## 📋 Design Decisions
+
+- **Firebase `onValue()` over REST polling** — Zero network overhead, instant push updates when election state changes.
+- **Cloud Function as gateway** — Vertex AI service account auth never reaches the browser. A single secure proxy handles all sensitive API calls.
+- **Two-tier AI routing** — Cloud Function preferred (Vertex AI, BigQuery logging); falls back to direct Gemini API if CF is cold-starting. Ensures 100% availability.
+- **Proactive loop at 60s intervals** — Responsive to minute-level deadline changes without hammering Firebase.
+- **Intent classifier before Gemini** — Lightweight regex runs in <1ms client-side, enabling the view toggle (map vs timeline) and context enrichment before any async call.
+- **Fire-and-forget BigQuery** — Streaming inserts are never awaited in the UI path. Analytics failure never degrades the civic UX.
+
+---
+
+## ♿ Accessibility
+
+- **Skip to main content** link as first focusable element
+- `role="log"` on conversation history with `aria-live="polite"`
+- `role="alert"` + `aria-live="assertive"` on proactive civic alerts
+- `aria-atomic="true"` on all live region updates
+- `role="img" aria-label="..."` on SVG timeline
+- `role="legend"` on map status legend
+- All interactive elements (chips, form, timeline milestones) keyboard navigable with focus-visible styles
+- `prefers-reduced-motion` guard on all animations
+- Colour contrast ratio ≥ 4.5:1 across all text (civic trust requires WCAG AA compliance)
+- `visually-hidden` class for screen-reader-only hints without visual clutter

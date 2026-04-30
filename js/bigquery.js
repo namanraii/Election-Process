@@ -1,16 +1,20 @@
 /**
  * bigquery.js
  * @module bigquery
- * @description Google BigQuery Streaming Inserts integration for StadiumIQ.
- * Logs every user interaction, AI response, and live venue state as a
- * structured row into a BigQuery table for post-event analytics and ML training.
+ * @description Google BigQuery Streaming Inserts integration for ElectionIQ.
+ * Logs every user interaction, AI response, and live election milestone state
+ * as a structured row into BigQuery tables for civic analytics and research.
  *
- * This creates a complete data pipeline:
- *  1. User query arrives → intent classified → NL entities extracted
- *  2. Gemini generates response with live venue context
+ * Data pipeline:
+ *  1. User sends a civic query → intent classified → NL entities extracted
+ *  2. Gemini generates a response with live election context
  *  3. BigQuery Streaming Insert logs the full interaction record in real-time
- *  4. Post-event: analysts query BigQuery to identify crowd bottlenecks,
- *     measure AI response accuracy, and train improved venue models
+ *  4. Admin panel (?admin=1) queries BigQuery to show most-asked questions,
+ *     intent distribution, and proactive alert effectiveness
+ *
+ * Tables:
+ *  - `civic_interactions`      — every user query + AI response record
+ *  - `milestone_snapshots`     — periodic election phase/milestone state
  *
  * Google Services used:
  *  - Google BigQuery (bigquery.googleapis.com) — real-time streaming analytics pipeline
@@ -19,59 +23,72 @@
  */
 
 import { fetchWithTimeout, uniqueId } from "./utils.js";
-import { logger } from "./logger.js";
+import { logger }                     from "./logger.js";
 
-/** @constant {string} BigQuery project ID */
-const BQ_PROJECT = "smartstadium-493619";
+// ---------------------------------------------------------------------------
+// Configuration
+// ---------------------------------------------------------------------------
 
-/** @constant {string} BigQuery dataset for all stadium analytics */
-const BQ_DATASET = "stadium_analytics";
+/** @constant {string} Google Cloud project ID */
+const BQ_PROJECT = window.ENV?.FIREBASE_PROJECT_ID || "electioniq-project";
+
+/** @constant {string} BigQuery dataset for all civic analytics */
+const BQ_DATASET = "civic_analytics";
 
 /** @constant {string} Table storing every user interaction + AI response */
-const BQ_TABLE_INTERACTIONS = "user_interactions";
+const BQ_TABLE_INTERACTIONS = "civic_interactions";
 
-/** @constant {string} Table storing live crowd/gate snapshots per query */
-const BQ_TABLE_VENUE_SNAPSHOTS = "venue_snapshots";
+/** @constant {string} Table storing election milestone state snapshots */
+const BQ_TABLE_SNAPSHOTS = "milestone_snapshots";
 
-/** @constant {string} BigQuery tabledata insertAll REST endpoint template */
-const BQ_INSERT_URL = (dataset, table) =>
-  `https://bigquery.googleapis.com/bigquery/v2/projects/${BQ_PROJECT}/datasets/${dataset}/tables/${table}/insertAll`;
+/**
+ * Returns the BigQuery tabledata insertAll REST endpoint for a given table.
+ * @param {string} table - Target BigQuery table name
+ * @returns {string} Full REST endpoint URL
+ * @private
+ */
+const _bqInsertUrl = (table) =>
+  `https://bigquery.googleapis.com/bigquery/v2/projects/${BQ_PROJECT}/datasets/${BQ_DATASET}/tables/${table}/insertAll`;
 
-/** @constant {number} Insert timeout in milliseconds — non-blocking */
+/** @constant {number} Insert request timeout in milliseconds — kept short since fire-and-forget */
 const BQ_TIMEOUT_MS = 6_000;
+
+// ---------------------------------------------------------------------------
+// Type Definitions
+// ---------------------------------------------------------------------------
 
 /**
  * @typedef {Object} InteractionRecord
- * @property {string} session_id      - Anonymous user session UID
- * @property {string} query           - Sanitised user query text
+ * @property {string} session_id      - Anonymous user session UID from Firebase Auth
+ * @property {string} query           - Sanitised user query text (max 300 chars)
  * @property {string} intent          - Classified intent category
  * @property {string} response        - Gemini-generated reply text
- * @property {number} response_ms     - Time to generate response (milliseconds)
- * @property {number} game_quarter    - Current quarter at time of query
- * @property {number} minutes_left    - Minutes remaining in quarter
- * @property {string} game_phase      - "pre" | "live" | "halftime" | "post"
+ * @property {number} response_ms     - Time to generate response in milliseconds
+ * @property {string} election_phase  - Current election phase (e.g. "early-voting")
  * @property {number} ts              - Unix timestamp in milliseconds
  */
 
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 /**
- * Stream a user interaction record to BigQuery for post-event analytics.
- * Uses the streaming insertAll API for low-latency, real-time data ingestion.
- * Runs asynchronously and never blocks the UI — failures are silently logged.
+ * Stream a civic interaction record to BigQuery.
+ * Uses streaming insertAll for low-latency real-time data ingestion.
+ * Runs asynchronously — never blocks the UI pipeline.
  *
  * @param {InteractionRecord} record - Structured interaction data to insert
  * @returns {Promise<void>}
  *
  * @example
- * await streamInteraction({
- *   session_id: "abc123",
- *   query: "How long is the food queue?",
- *   intent: "queue",
- *   response: "Stadium Grill has a 7-minute wait.",
- *   response_ms: 843,
- *   game_quarter: 3,
- *   minutes_left: 8,
- *   game_phase: "live",
- *   ts: Date.now(),
+ * streamInteraction({
+ *   session_id:     "abc123",
+ *   query:          "How do I register to vote?",
+ *   intent:         "registration",
+ *   response:       "You can register at vote.gov or at your local DMV.",
+ *   response_ms:    812,
+ *   election_phase: "early-voting",
+ *   ts:             Date.now(),
  * });
  */
 export async function streamInteraction(record) {
@@ -79,43 +96,44 @@ export async function streamInteraction(record) {
 }
 
 /**
- * Stream a venue state snapshot to BigQuery.
- * Called whenever gate capacities update, creating a time-series of crowd density.
- * Enables post-event heatmap and bottleneck analysis.
+ * Stream a civic milestone snapshot to BigQuery.
+ * Called whenever the election state updates from Firebase, creating a time-series
+ * of election phase progression. Powers the admin analytics panel.
  *
- * @param {Object} gateData  - Map of gate IDs to { capacityPct: number }
- * @param {Object} crowdData - Map of zone IDs to { density: number }
- * @param {Object} gameState - { quarter, minutesLeft, phase }
+ * @param {Object} milestones - Map of milestone IDs to Unix timestamps
+ * @param {Object} phases     - { current: string, label: string }
  * @returns {Promise<void>}
  */
-export async function streamVenueSnapshot(gateData, crowdData, gameState) {
+export async function streamCivicSnapshot(milestones, phases) {
   const record = {
-    ts:           Date.now(),
-    game_quarter: gameState?.quarter ?? 0,
-    minutes_left: gameState?.minutesLeft ?? 0,
-    game_phase:   gameState?.phase ?? "unknown",
-    gates_json:   JSON.stringify(gateData  || {}),
-    crowd_json:   JSON.stringify(crowdData || {}),
+    ts:               Date.now(),
+    election_phase:   phases?.current  ?? "unknown",
+    phase_label:      phases?.label    ?? "Unknown",
+    milestones_json:  JSON.stringify(milestones || {}),
   };
-  return _insertRows(BQ_TABLE_VENUE_SNAPSHOTS, [record]);
+  return _insertRows(BQ_TABLE_SNAPSHOTS, [record]);
 }
 
+// ---------------------------------------------------------------------------
+// Private Helpers
+// ---------------------------------------------------------------------------
+
 /**
- * Internal helper — POST rows to BigQuery insertAll endpoint.
- * Uses a unique `insertId` per row to guarantee exactly-once delivery semantics.
- * Gracefully degrades if the API key doesn't have BigQuery access.
+ * POST rows to the BigQuery insertAll endpoint.
+ * Assigns a unique `insertId` per row to guarantee exactly-once delivery semantics.
+ * Gracefully degrades when BigQuery access is unavailable (non-fatal).
  *
  * @param {string}   table - BigQuery table name within {@link BQ_DATASET}
- * @param {Object[]} rows  - Array of row objects to insert
+ * @param {Object[]} rows  - Array of plain-object rows to insert
  * @returns {Promise<void>}
  * @private
  */
 async function _insertRows(table, rows) {
-  if (!window.ENV?.MAPS_API_KEY) return;
+  if (!window.ENV?.MAPS_API_KEY) {return;}
 
   const payload = {
     rows: rows.map(json => ({
-      insertId: uniqueId("row"), // uniqueId() from utils.js — unique per insert
+      insertId: uniqueId("bq"),  // Ensures exactly-once semantics per row
       json,
     })),
     skipInvalidRows:     false,
@@ -124,7 +142,7 @@ async function _insertRows(table, rows) {
 
   try {
     const res = await fetchWithTimeout(
-      `${BQ_INSERT_URL(BQ_DATASET, table)}?key=${window.ENV.MAPS_API_KEY}`,
+      `${_bqInsertUrl(table)}?key=${window.ENV.MAPS_API_KEY}`,
       {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,17 +150,20 @@ async function _insertRows(table, rows) {
       },
       BQ_TIMEOUT_MS
     );
+
     if (!res.ok) {
-      // BigQuery API key permissions often limited on dev builds — expected
-      logger.info("bigquery", `Insert to ${table} returned ${res.status} — continuing`);
+      logger.info("bigquery", `Insert to ${table} returned HTTP ${res.status} — continuing`);
+      return;
+    }
+
+    const data = await res.json();
+    if (data.insertErrors?.length) {
+      logger.warn("bigquery", `Row insert errors in "${table}":`, data.insertErrors);
     } else {
-      const data = await res.json();
-      if (data.insertErrors?.length) {
-        logger.warn("bigquery", "Row insert errors:", data.insertErrors);
-      }
+      logger.debug("bigquery", `Streamed ${rows.length} row(s) to "${table}"`);
     }
   } catch (e) {
-    // Non-fatal — never disrupt user experience for analytics
+    // Non-fatal — analytics failure must never disrupt the civic UX
     logger.info("bigquery", `Analytics stream unavailable: ${e.message}`);
   }
 }

@@ -9,7 +9,7 @@
   },
   "rules": {
     "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-    "no-console": ["warn", { "allow": ["info", "warn", "error"] }],
+    "no-console": ["warn", { "allow": ["debug", "info", "warn", "error"] }],
     "eqeqeq": ["error", "always"],
     "curly": "error",
     "no-var": "error",

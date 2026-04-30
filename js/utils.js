@@ -48,7 +48,7 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = 8_000) {
  * sanitise("How long is the queue?");         // → "How long is the queue?"
  */
 export function sanitise(raw, maxLen = 300) {
-  if (typeof raw !== "string") return "";
+  if (typeof raw !== "string") {return "";}
   return raw.replace(/[<>&"'`]/g, "").substring(0, maxLen).trim();
 }
 
@@ -63,7 +63,7 @@ export function sanitise(raw, maxLen = 300) {
  * uniqueId("row"); // → "row-1713421234567-a3f1"
  */
 export function uniqueId(prefix = "") {
-  const rand = Math.random().toString(16).slice(2, 6);
+  const rand = Math.random().toString(16).slice(2, 10);
   return `${prefix}${prefix ? "-" : ""}${Date.now()}-${rand}`;
 }
 

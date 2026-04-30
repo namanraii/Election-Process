@@ -1,13 +1,13 @@
 /**
  * auth.js
  * @module auth
- * @description Firebase Authentication integration for StadiumIQ.
+ * @description Firebase Authentication integration for ElectionIQ.
  * Signs users in anonymously on first visit to create a persistent session,
  * enabling per-user performance traces in Firebase Performance Monitoring
- * and future personalisation (e.g. saved seat preferences, alert history).
+ * and scoped GA4 civic analytics across the session.
  *
- * Anonymous auth is ideal for stadium events — no registration friction,
- * yet each session is uniquely identifiable for analytics and access control.
+ * Anonymous auth is ideal for civic tools — no registration friction,
+ * yet each session is uniquely identifiable for engagement analysis.
  *
  * Google Services used:
  *  - Firebase Authentication (firebase.google.com/products/auth) — anonymous sessions

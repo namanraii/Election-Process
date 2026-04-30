@@ -7,7 +7,7 @@
  *
  * Google Services used:
  *  - Firebase Realtime Database (firebaseio.com) — zero-poll live data sync
- *
+ *    Watches the `milestones`, `phases`, `faqs`, and `alerts` nodes.
  * @see https://firebase.google.com/docs/database/web/read-and-write
  */
 import { initializeApp } from
@@ -23,12 +23,12 @@ let _db;
 
 /**
  * Reactive state object — updated automatically by Firebase `onValue` listeners.
- * @type {{ gameState: Object, queues: Object, gates: Object, crowd: Object, alerts: Object }}
+ * @type {{ milestones: Object, phases: Object, faqs: Object, alerts: Object }}
  */
-let _state = { gameState: {}, queues: {}, gates: {}, crowd: {}, alerts: {} };
+const _state = { milestones: {}, phases: {}, faqs: {}, alerts: {} };
 
 /** Database nodes to subscribe to on startup. */
-const WATCHED_NODES = ["gameState", "queues", "gates", "crowd", "alerts"];
+const WATCHED_NODES = ["milestones", "phases", "faqs", "alerts"];
 
 /**
  * Initialise Firebase and start all realtime listeners.
@@ -39,9 +39,14 @@ const WATCHED_NODES = ["gameState", "queues", "gates", "crowd", "alerts"];
  */
 export async function initFirebase() {
   const app = initializeApp({
-    apiKey:      window.ENV.FIREBASE_API_KEY,
-    databaseURL: window.ENV.FIREBASE_DB_URL,
-    projectId:   window.ENV.FIREBASE_PROJECT_ID,
+    apiKey:            window.ENV.FIREBASE_API_KEY,
+    authDomain:        window.ENV.FIREBASE_AUTH_DOMAIN,
+    databaseURL:       window.ENV.FIREBASE_DB_URL,
+    projectId:         window.ENV.FIREBASE_PROJECT_ID,
+    storageBucket:     window.ENV.FIREBASE_STORAGE,
+    messagingSenderId: window.ENV.FIREBASE_SENDER_ID,
+    appId:             window.ENV.FIREBASE_APP_ID,
+    measurementId:     window.ENV.FIREBASE_MEASUREMENT,
   });
   _db = getDatabase(app);
   initPerformance(app); // Firebase Performance Monitoring — 7th Google service
@@ -55,10 +60,10 @@ export async function initFirebase() {
   WATCHED_NODES.forEach(node => {
     onValue(ref(_db, node), snap => {
       _state[node] = snap.val() || {};
-      if (node === "alerts") _handleNewAlerts(_state.alerts);
-      if (node === "gameState") {
+      if (node === "alerts") {_handleNewAlerts(_state.alerts);}
+      if (node === "phases" || node === "milestones") {
         window.dispatchEvent(
-          new CustomEvent("gamestate-update", { detail: _state.gameState })
+          new CustomEvent("electionstate-update", { detail: _state })
         );
       }
     });
@@ -75,25 +80,6 @@ export function getLiveContext() {
   return { ..._state };
 }
 
-/**
- * Build a human-readable summary string of all currently open queue stalls.
- * Used to enrich Gemini's context for queue-related queries.
- *
- * @param {Object} queues - Map of stall IDs to { waitMinutes: number, isOpen: boolean }
- * @param {Array<{ id: string, name: string }>} stalls - Static list of stall definitions
- * @returns {string} Comma-separated summary, e.g. "Stadium Grill: 7 min, North Stand: 3 min"
- *
- * @example
- * buildQueueSummary({ c1: { waitMinutes: 7, isOpen: true } }, [{ id: "c1", name: "Grill" }]);
- * // → "Grill: 7 min"
- */
-export function buildQueueSummary(queues, stalls) {
-  if (!queues || !Array.isArray(stalls)) return "";
-  return stalls
-    .filter(stall => queues[stall.id]?.isOpen)
-    .map(stall => `${stall.name}: ${queues[stall.id].waitMinutes} min`)
-    .join(", ");
-}
 
 /**
  * Dispatch a `stadium-alert` event for any alerts received within the last 90 seconds.
@@ -104,12 +90,12 @@ export function buildQueueSummary(queues, stalls) {
  * @private
  */
 function _handleNewAlerts(alerts) {
-  if (!alerts || typeof alerts !== "object") return;
+  if (!alerts || typeof alerts !== "object") {return;}
   const recent = Object.values(alerts)
     .filter(a => a?.timestamp && (Date.now() / 1000 - a.timestamp) < 90);
   if (recent.length) {
     window.dispatchEvent(
-      new CustomEvent("stadium-alert", { detail: recent[0] })
+      new CustomEvent("civic-alert", { detail: recent[0] })
     );
   }
 }

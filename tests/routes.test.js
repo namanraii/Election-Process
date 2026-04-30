@@ -63,7 +63,7 @@ describe("computeRoute — response parsing", () => {
     global.fetch = async () => ({ ok: false, status: 403 });
     await expect(
       computeRoute({ lat: 0, lng: 0 }, { lat: 1, lng: 1 })
-    ).rejects.toThrow("Routes API error 403");
+    ).rejects.toThrow("Routes API failed:");
   });
 
   test("throws when routes array is empty", async () => {

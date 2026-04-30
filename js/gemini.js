@@ -20,16 +20,19 @@ const GEMINI_ENDPOINT =
 const _responseCache = new Map();
 
 /** @constant {string} System-level persona and behavioural rules for Gemini */
-const SYSTEM_PROMPT = `You are StadiumIQ, the AI concierge for MetroArena.
-You have access to real-time data: gate capacity, queue times, crowd density,
-and the live game state. Use this data to give specific, actionable answers.
+const SYSTEM_PROMPT = `You are ElectionIQ, a nonpartisan civic 
+education assistant. Your job is to help citizens understand 
+the election process clearly and factually.
 
 Rules:
-- Be concise (2-3 sentences max for most answers)
-- Always use actual numbers from the context (e.g. "Gate D has 18% capacity")
-- For routing, prefer least-crowded paths
-- If outside your venue knowledge, politely redirect
-- Tone: friendly, confident, helpful`;
+- Never express political opinions or favour any party/candidate
+- Be specific — use actual dates and steps from the context
+- Keep answers to 2-3 sentences for simple questions
+- For process questions, use numbered steps
+- If asked about a specific state, use state-specific rules
+- Redirect policy debates: "I focus on how elections work,
+  not political positions"
+- Tone: clear, trustworthy, encouraging civic participation`;
 
 /**
  * Send a message to Gemini 2.5 Flash with full venue context injected.
@@ -46,9 +49,9 @@ Rules:
  * @throws {Error} If the API responds with a non-2xx status
  */
 export async function askGemini(userMessage, ctx) {
-  // Cache key: question + game state snapshot
-  const cacheKey = `${userMessage}|Q${ctx.gameState?.quarter}|${ctx.gameState?.minutesLeft}`;
-  if (_responseCache.has(cacheKey)) return _responseCache.get(cacheKey);
+  // Cache key: question + election phase
+  const cacheKey = `${userMessage}|${ctx.phases?.current}`;
+  if (_responseCache.has(cacheKey)) {return _responseCache.get(cacheKey);}
 
   const contextBlock = _buildContextBlock(ctx);
 
@@ -104,8 +107,8 @@ export async function askGemini(userMessage, ctx) {
  */
 export async function askGeminiProactive(triggerReason, ctx) {
   const msg = `The system has detected: ${triggerReason}.
-Write a short proactive alert (1-2 sentences) for the attendee.
-Use specific numbers from the venue data. Be helpful and direct.`;
+Write a short proactive alert (1-2 sentences) for the citizen.
+Be helpful and direct.`;
   return askGemini(msg, ctx);
 }
 
@@ -118,10 +121,9 @@ Use specific numbers from the venue data. Be helpful and direct.`;
  * @private
  */
 function _buildContextBlock(ctx) {
-  return `LIVE VENUE DATA (use this to answer):
-Game: Q${ctx.gameState?.quarter}, ${ctx.gameState?.minutesLeft} min left, Phase: ${ctx.gameState?.phase}
-Gates: ${JSON.stringify(ctx.gates)}
-Queues: ${JSON.stringify(ctx.queues)}
-Crowd: ${JSON.stringify(ctx.crowd)}
-Schedule: ${JSON.stringify(window.STADIUM?.schedule)}${ctx.nlEntities ? `\nNL Analysis: ${ctx.nlEntities}` : ""}`.trim();
+  return `LIVE ELECTION DATA (use this to answer):
+Phases: ${JSON.stringify(ctx.phases)}
+Milestones: ${JSON.stringify(ctx.milestones)}
+FAQs: ${JSON.stringify(ctx.faqs)}
+Election Data: ${JSON.stringify(window.ELECTION)}${ctx.nlEntities ? `\nNL Analysis: ${ctx.nlEntities}` : ""}`.trim();
 }
