@@ -71,7 +71,6 @@ steps:
     waitFor: ['inject-keys', 'deploy-cloud-function']
 
 substitutions:
-  _REGION: us-central1
   _GEMINI_API_KEY: ""
   _FIREBASE_API_KEY: ""
   _FIREBASE_AUTH_DOMAIN: ""
