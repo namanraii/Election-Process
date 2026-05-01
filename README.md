@@ -145,7 +145,7 @@ gcloud functions deploy electionIQAssist --runtime nodejs20 --trigger-http --all
 ```bash
 npm install
 npm test
-# Expected output: 6 suites, 55+ tests, all passing
+# Expected output: 9 suites, 150+ tests, all passing
 
 npm run coverage
 # Generates coverage report in /coverage directory
@@ -156,7 +156,10 @@ npm run coverage
 |---|---|
 | `intent.test.js` | 25+ civic intent classification cases across all 7 categories |
 | `proactive.test.js` | All 5 date-diff triggers + edge cases (today = deadline, tomorrow = deadline) |
-| `timeline.test.js` | Milestone rendering, status updates (past/current/upcoming) |
+| `ai.test.js` | Cloud Function → Gemini fallback routing, CF health state, performance traces |
+| `timeline.test.js` | Milestone rendering, safe DOM construction, keyboard accessibility, status styles |
+| `ui.test.js` | DOM rendering, ARIA attributes, alert banner show/hide/auto-dismiss, consumeInput |
+| `logger.test.js` | Log level filtering, message formatting, dynamic level switching |
 | `nlp.test.js` | `formatAnnotationForContext` with civic entity examples |
 | `utils.test.js` | `sanitise`, `clamp`, `uniqueId` (all pure functions) |
 | `routes.test.js` | Mock fetch for walking route computation |
@@ -209,7 +212,10 @@ ElectionIQ/
 ├── tests/
 │   ├── intent.test.js      # 25+ intent classification unit tests
 │   ├── proactive.test.js   # Proactive trigger unit tests
-│   ├── timeline.test.js    # Timeline milestone tests
+│   ├── ai.test.js          # Cloud Function / Gemini routing tests
+│   ├── timeline.test.js    # Timeline milestone rendering + keyboard tests
+│   ├── ui.test.js          # DOM rendering + ARIA accessibility tests
+│   ├── logger.test.js      # Structured logging level + formatting tests
 │   ├── nlp.test.js         # NL annotation formatting tests
 │   ├── utils.test.js       # Pure utility function tests
 │   └── routes.test.js      # Mock fetch route tests

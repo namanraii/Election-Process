@@ -82,7 +82,7 @@ export function getLiveContext() {
 
 
 /**
- * Dispatch a `stadium-alert` event for any alerts received within the last 90 seconds.
+ * Dispatch a `civic-alert` event for any alerts received within the last 90 seconds.
  * Prevents re-firing stale alerts from a previous Firebase session.
  *
  * @param {Object} alerts - Map of alert objects, each with a Unix `timestamp` field

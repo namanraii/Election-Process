@@ -58,7 +58,7 @@ Rules:
 - Tone: clear, trustworthy, encouraging civic participation`;
 
 // ---------------------------------------------------------------------------
-// Cloud Function: stadiumIQAssist
+// Cloud Function: electionIQAssist
 // ---------------------------------------------------------------------------
 
 /**

@@ -1,7 +1,34 @@
 # Changelog
 
-All notable changes to StadiumIQ are documented in this file.
+All notable changes to ElectionIQ are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+---
+
+## [2.0.0] — 2026-05-01
+
+### Added — Code Quality Improvements
+- `CONTRIBUTING.md`: Development standards, naming conventions, testing requirements
+- `.gcloudignore`: Excludes test files, coverage reports, and docs from Cloud Run deployments
+- `tests/ai.test.js`: 8 tests for Cloud Function/Gemini routing, fallback, health state
+- `tests/logger.test.js`: 9 tests for log level filtering, message formatting, dynamic switching
+- `tests/ui.test.js`: 14 tests for DOM rendering, ARIA attributes, alert banner, consumeInput
+- `tests/timeline.test.js`: Expanded to 18 tests — safe DOM construction, keyboard accessibility
+
+### Fixed — Code Quality
+- Removed all "StadiumIQ" references across `utils.js`, `perf.js`, `gemini.js`, `firebase.js`, `ai.js`, `functions/index.js`, `style.css`, `CHANGELOG.md`
+- Fixed `gemini.js` JSDoc parameters (`phases/milestones/faqs` instead of `gameState/queues/crowd`)
+- Fixed `gemini.js` prompt text (`User:` instead of `Attendee:`)
+- Fixed `ai.js` JSDoc example and stale URL reference
+
+### Fixed — Security
+- Removed hardcoded Maps API key from `index.html` — now loaded dynamically from `window.ENV`
+- Rewrote `SECURITY.md` with 8 threat models, rate limiting, prompt injection, Firebase rules
+- `timeline.js` rewritten to use safe DOM construction (`createElement` + `textContent`) instead of `innerHTML`
+
+### Fixed — Accessibility
+- Timeline items now have `role="button"` and `aria-label` for screen readers
+- Timeline wrapper uses `role="list"` for semantic structure
 
 ---
 
@@ -41,13 +68,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added — Google Services
 - **BigQuery Streaming Inserts** (`js/bigquery.js`): `streamInteraction()` logs every
-  query + intent + response + game state; `streamVenueSnapshot()` logs gate/crowd on
-  every Firebase gamestate update — `bigquery.googleapis.com` REST API
+  query + intent + response + election state; `streamCivicSnapshot()` logs milestones on
+  every Firebase election state update — `bigquery.googleapis.com` REST API
 - **Cloud Natural Language API** (`js/nlp.js`): `analyzeEntities` + `analyzeSentiment`
   on every user query; extracted entities injected into Gemini context block
 - **Firebase Authentication** (`js/auth.js`): Anonymous sessions via `signInAnonymously()`
-- **Google Analytics 4** (`js/analytics.js`): `chat_message_sent`, `proactive_alert_shown`,
-  `route_computed` event tracking via Firebase Analytics SDK
+- **Google Analytics 4** (`js/analytics.js`): `civic_question_asked`, `milestone_alert_shown`,
+  `polling_place_found` event tracking via Firebase Analytics SDK
 
 ### Added — Infrastructure
 - README.md: Rewritten Google Services section as ASCII pipeline diagram showing
@@ -73,10 +100,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.1.0] — 2026-04-17
 
 ### Added
-- Full JSDoc overhaul across all 7 JS modules (`@module`, `@typedef`, `@example`, `@private`)
-- Test suite expanded from 17 → 70+ unit tests across intent, proactive, queue, routes,
-  utils, and nlp modules
-- `getMarkersByType()` helper exported from `maps.js` for external testability
+- Full JSDoc overhaul across all JS modules (`@module`, `@typedef`, `@example`, `@private`)
+- Test suite expanded to 70+ unit tests across intent, proactive, routes, utils, and nlp modules
+- All modules use centralised `logger.js` — no direct `console.*` calls
 
 ### Fixed
 - `parseInt(route.duration, 10)` radix parameter added
@@ -87,9 +113,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.0.0] — 2026-04-17
 
 ### Added — Initial Release
-- Gemini 2.5 Flash chat interface with intent classification (6 intents)
-- Firebase Realtime Database live sync (gameState, queues, gates, crowd)
-- Google Maps JavaScript API — satellite venue map with custom SVG markers
+- Gemini 2.5 Flash chat interface with intent classification (7 civic intents)
+- Firebase Realtime Database live sync (milestones, phases, faqs, alerts)
+- Google Maps JavaScript API — polling place finder with coloured status markers
 - Routes API v2 — pedestrian walking directions with `WALK` travel mode
-- Proactive alert engine — 5 game-phase triggers firing unprompted Gemini messages
+- Proactive alert engine — 4 date-diff triggers firing unprompted Gemini messages
 - Cloud Run deployment via Nginx container + Cloud Build source-based build

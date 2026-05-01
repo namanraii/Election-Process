@@ -8,7 +8,7 @@
  *    → Vertex AI Gemini 2.5 Flash (enterprise, service-account authenticated)
  *    → Cloud Natural Language API (server-side entity extraction)
  *    → BigQuery streaming insert (server-side, more reliable)
- *    URL: https://us-central1-smartstadium-493619.cloudfunctions.net/electionIQAssist
+ *    URL injected at build time via __CF_URL__ placeholder in config
  *
  *  Tier 2 (fallback): Direct Gemini AI Studio API
  *    → Used when Cloud Function is cold-starting or rate-limited
@@ -34,7 +34,7 @@ import { logger }           from "./logger.js";
  * @constant {string} Deployed Cloud Function endpoint.
  * Handles Vertex AI + NL API + BigQuery server-side.
  */
-const CF_URL = "https://us-central1-smartstadium-493619.cloudfunctions.net/electionIQAssist";
+const CF_URL = "__CF_URL__";
 
 /** @constant {number} Cloud Function request timeout (includes cold-start allowance) */
 const CF_TIMEOUT_MS = 12_000;
@@ -47,12 +47,12 @@ let _cfHealthy = true;
  * Tries the Cloud Function (Vertex AI) first; falls back to direct Gemini if needed.
  *
  * @param {string} message  - Sanitised user query
- * @param {Object} context  - Live venue context from Firebase (getLiveContext())
+ * @param {Object} context  - Live election context from Firebase (getLiveContext())
  * @param {string} [intent] - Classified intent category for BigQuery logging
  * @returns {Promise<string>} AI-generated reply text
  *
  * @example
- * const reply = await routeAIQuery("Where is the shortest queue?", ctx, "queue");
+ * const reply = await routeAIQuery("How do I register to vote?", ctx, "registration");
  */
 export async function routeAIQuery(message, context, intent = "general") {
   if (_cfHealthy) {
