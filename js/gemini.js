@@ -2,8 +2,8 @@
  * gemini.js
  * @module gemini
  * @description Handles all Gemini 2.5 Flash API communication.
- * Context (gameState, queues, crowd) is injected into every request
- * to ground responses in real-time venue data from Firebase.
+ * Context (phases, milestones, faqs) is injected into every request
+ * to ground responses in real-time election data from Firebase.
  *
  * Google Services used:
  *  - Gemini 2.5 Flash (generativelanguage.googleapis.com) — NLU + generation
@@ -40,11 +40,10 @@ Rules:
  * to reduce redundant API calls for repeated quick-action taps.
  *
  * @param {string} userMessage - Raw user input (already sanitised by app.js)
- * @param {Object} ctx          - Live context snapshot from getLiveContext()
- * @param {Object} ctx.gameState - Current quarter, minutesLeft, phase
- * @param {Object} ctx.gates     - Gate IDs mapped to {capacityPct}
- * @param {Object} ctx.queues    - Queue IDs mapped to {waitMinutes}
- * @param {Object} ctx.crowd     - Zone IDs mapped to {density}
+ * @param {Object} ctx             - Live context snapshot from getLiveContext()
+ * @param {Object} ctx.phases      - Current election phase and label
+ * @param {Object} ctx.milestones  - Election milestone timestamps
+ * @param {Object} ctx.faqs        - Pre-loaded civic FAQs from Firebase
  * @returns {Promise<string>} Gemini assistant reply text (trimmed)
  * @throws {Error} If the API responds with a non-2xx status
  */
@@ -59,7 +58,7 @@ export async function askGemini(userMessage, ctx) {
     system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents: [{
       role: "user",
-      parts: [{ text: `${contextBlock}\n\nAttendee: ${userMessage}` }]
+      parts: [{ text: `${contextBlock}\n\nUser: ${userMessage}` }]
     }],
     generationConfig: {
       maxOutputTokens: 256,

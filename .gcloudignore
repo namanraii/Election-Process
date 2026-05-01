@@ -1,0 +1,19 @@
+# Files and directories to exclude from Cloud Run / Cloud Build source uploads
+.git
+.gitignore
+node_modules/
+coverage/
+tests/
+*.test.js
+test_output.txt
+test-console.js
+.env
+.env.local
+.env.example
+.DS_Store
+*.log
+README.md
+CHANGELOG.md
+SECURITY.md
+LICENSE
+.eslintrc.json

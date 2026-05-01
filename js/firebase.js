@@ -32,7 +32,7 @@ const WATCHED_NODES = ["milestones", "phases", "faqs", "alerts"];
 
 /**
  * Initialise Firebase and start all realtime listeners.
- * Dispatches a `gamestate-update` CustomEvent on every gameState change.
+ * Dispatches an `electionstate-update` CustomEvent on every phase/milestone change.
  * Should be called exactly once at app startup.
  *
  * @returns {void}
@@ -74,7 +74,7 @@ export async function initFirebase() {
  * Returns a shallow copy of the current live state snapshot.
  * Safe to call from any module at any time.
  *
- * @returns {{ gameState: Object, queues: Object, gates: Object, crowd: Object, alerts: Object }}
+ * @returns {{ milestones: Object, phases: Object, faqs: Object, alerts: Object }}
  */
 export function getLiveContext() {
   return { ..._state };

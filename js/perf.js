@@ -1,7 +1,7 @@
 /**
  * perf.js
  * @module perf
- * @description Firebase Performance Monitoring integration for StadiumIQ.
+ * @description Firebase Performance Monitoring integration for ElectionIQ.
  * Instruments key user-facing interactions with custom traces to measure
  * real-world latency across Google Cloud services.
  *

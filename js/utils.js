@@ -1,7 +1,7 @@
 /**
  * utils.js
  * @module utils
- * @description Shared utility functions used across StadiumIQ modules.
+ * @description Shared utility functions used across ElectionIQ modules.
  * Centralises cross-cutting concerns to enforce DRY principles and ensure
  * consistent behaviour (timeouts, sanitisation, ID generation) app-wide.
  */
