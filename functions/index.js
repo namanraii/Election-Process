@@ -114,6 +114,7 @@ functions.http("electionIQAssist", async (req, res) => {
         .map(e => ({ name: e.name, type: e.type }));
     } catch (_nlErr) {
       // Non-fatal — continue without NL enrichment
+      console.warn("[ElectionIQ:cf] NL extraction skipped/failed.");
     }
 
     // ------------------------------------------------------------------
@@ -163,7 +164,7 @@ functions.http("electionIQAssist", async (req, res) => {
         .insert([{
           session_id:   sessionId,
           query:        sanitised,
-          intent:       intent,
+          intent,
           response:     reply,
           response_ms:  responseMs,
           entities_json: JSON.stringify(entities),
@@ -171,6 +172,7 @@ functions.http("electionIQAssist", async (req, res) => {
         }]);
     } catch (_bqErr) {
       // Non-fatal — analytics failure never blocks the response
+      console.warn("[ElectionIQ:cf] BigQuery insert skipped/failed.");
     }
 
     res.status(200).json({ reply, entities, response_ms: responseMs });
