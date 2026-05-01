@@ -150,7 +150,8 @@ body {
   z-index: 100;
 }
 
-#alert-banner[hidden] {
+/* Ensure HTML5 hidden attribute always wins over generic display rules */
+[hidden] {
   display: none !important;
 }
 
