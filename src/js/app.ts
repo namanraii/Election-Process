@@ -1,5 +1,5 @@
 /**
- * app.js
+ * app.ts
  * @module app
  * @description Main application entry point for ElectionIQ.
  * Bootstraps all modules, wires DOM event listeners, and exposes global
@@ -20,15 +20,16 @@
  *  4. Register event listeners for Firebase election state changes and alerts
  */
 
-import { initFirebase, getLiveContext } from "./firebase.js";
-import { routeAIQuery } from "./ai.js";
-import { classifyIntent } from "./intent.js";
-import { startProactiveLoop } from "./proactive.js";
-import { initMap } from "./maps.js";
-import { analyseQuery, formatAnnotationForContext } from "./nlp.js";
-import { initTimeline, onMilestoneClick } from "./timeline.js";
-import { trackChatMessage, trackPollingPlaceSearch } from "./analytics.js";
-import { streamInteraction, streamCivicSnapshot } from "./bigquery.js";
+import "../css/style.css";
+import { initFirebase, getLiveContext } from "./firebase.ts";
+import { routeAIQuery } from "./ai.ts";
+import { classifyIntent } from "./intent.ts";
+import { startProactiveLoop } from "./proactive.ts";
+import { initMap } from "./maps.ts";
+import { analyseQuery, formatAnnotationForContext } from "./nlp.ts";
+import { initTimeline, onMilestoneClick } from "./timeline.ts";
+import { trackChatMessage, trackPollingPlaceSearch } from "./analytics.ts";
+import { streamInteraction, streamCivicSnapshot } from "./bigquery.ts";
 import {
   appendMessage,
   updateBotMessage,
@@ -36,9 +37,22 @@ import {
   hideAlertBanner,
   updateElectionStatus,
   consumeInput,
-} from "./ui.js";
-import { sanitise } from "./utils.js";
-import { logger } from "./logger.js";
+} from "./ui.ts";
+import { sanitise } from "./utils.ts";
+import { logger } from "./logger.ts";
+
+// ---------------------------------------------------------------------------
+// Google Maps API Loader (replaces inline script in index.html)
+// ---------------------------------------------------------------------------
+
+(function loadMapsAPI() {
+  const mapsKey = import.meta.env.VITE_MAPS_API_KEY || "";
+  const s = document.createElement("script");
+  s.src = `https://maps.googleapis.com/maps/api/js?key=${mapsKey}&libraries=places,marker&loading=async`;
+  s.async = true;
+  s.defer = true;
+  document.head.appendChild(s);
+})()
 
 // ---------------------------------------------------------------------------
 // Startup

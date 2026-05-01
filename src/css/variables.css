@@ -1,0 +1,74 @@
+/* ============================================
+   ElectionIQ — Design Tokens (variables.css)
+   ============================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap");
+
+:root {
+  /* Palette — clean, airy, subtle */
+  --c-bg: #f0f4f8;
+  --c-surface: #ffffff;
+  --c-surface-2: #f8fafc;
+  --c-border: #e2e8f0;
+  --c-border-soft: rgba(226, 232, 240, 0.6);
+
+  /* Accent — civic green-blue */
+  --c-accent: #1b7a5a;
+  --c-accent-light: #e6f6ee;
+  --c-accent-hover: #145e45;
+
+  /* Text */
+  --c-text: #1e2a3a;
+  --c-text-sub: #64748b;
+  --c-text-muted: #94a3b8;
+
+  /* Message bubbles */
+  --c-bot-bg: #f2f8f5;
+  --c-bot-text: #145e45;
+  --c-user-bg: #1b7a5a;
+  --c-user-text: #ffffff;
+  --c-proactive-bg: #fff7ed;
+  --c-proactive-border: #fed7aa;
+  --c-proactive-text: #9a3412;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-full: 9999px;
+
+  /* Transition */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---- Dark Mode Overrides ---- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: #0f172a;
+    --c-surface: #1e293b;
+    --c-surface-2: #334155;
+    --c-border: #475569;
+    --c-border-soft: rgba(71, 85, 105, 0.6);
+
+    --c-accent: #2dd4bf;
+    --c-accent-light: rgba(45, 212, 191, 0.1);
+    --c-accent-hover: #14b8a6;
+
+    --c-text: #f8fafc;
+    --c-text-sub: #cbd5e1;
+    --c-text-muted: #94a3b8;
+
+    --c-bot-bg: #1e293b;
+    --c-bot-text: #f8fafc;
+    --c-user-bg: #2dd4bf;
+    --c-user-text: #022c22;
+    --c-proactive-bg: #451a03;
+    --c-proactive-border: #9a3412;
+    --c-proactive-text: #ffedd5;
+  }
+}

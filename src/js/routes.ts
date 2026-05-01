@@ -14,8 +14,8 @@
  * @see https://developers.google.com/maps/documentation/routes
  */
 
-import { fetchWithTimeout } from "./utils.js";
-import { logger } from "./logger.js";
+import { fetchWithTimeout } from "./utils.ts";
+import { logger } from "./logger.ts";
 
 /** @constant {string} Routes API v2 computeRoutes endpoint */
 const ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
@@ -66,7 +66,7 @@ export async function computeRoute(origin, destination) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Goog-Api-Key": window.ENV.ROUTES_API_KEY,
+          "X-Goog-Api-Key": import.meta.env.VITE_ROUTES_API_KEY,
           "X-Goog-FieldMask":
             "routes.duration,routes.distanceMeters,routes.legs.steps.navigationInstruction",
         },

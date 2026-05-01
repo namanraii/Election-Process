@@ -11,10 +11,10 @@
  * 3. election-day: today is election day
  * 4. results-incoming: 1 day after election
  */
-import { getLiveContext } from "./firebase.js";
-import { askGeminiProactive } from "./gemini.js";
-import { trackProactiveAlert } from "./analytics.js";
-import { logger } from "./logger.js";
+import { getLiveContext } from "./firebase.ts";
+import { askGeminiProactive } from "./gemini.ts";
+import { trackProactiveAlert } from "./analytics.ts";
+import { logger } from "./logger.ts";
 
 /** @type {string|null} Key of the last fired trigger — prevents duplicate alerts */
 let _lastTrigger = null;

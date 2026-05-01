@@ -16,9 +16,9 @@ import {
   ref,
   onValue,
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-import { initPerformance } from "./perf.js";
-import { initAuth } from "./auth.js";
-import { initAnalytics } from "./analytics.js";
+import { initPerformance } from "./perf.ts";
+import { initAuth } from "./auth.ts";
+import { initAnalytics } from "./analytics.ts";
 
 /** @type {import("firebase/database").Database} */
 let _db;
@@ -41,14 +41,14 @@ const WATCHED_NODES = ["milestones", "phases", "faqs", "alerts"];
  */
 export async function initFirebase() {
   const app = initializeApp({
-    apiKey: window.ENV.FIREBASE_API_KEY,
-    authDomain: window.ENV.FIREBASE_AUTH_DOMAIN,
-    databaseURL: window.ENV.FIREBASE_DB_URL,
-    projectId: window.ENV.FIREBASE_PROJECT_ID,
-    storageBucket: window.ENV.FIREBASE_STORAGE,
-    messagingSenderId: window.ENV.FIREBASE_SENDER_ID,
-    appId: window.ENV.FIREBASE_APP_ID,
-    measurementId: window.ENV.FIREBASE_MEASUREMENT,
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    databaseURL: import.meta.env.VITE_FIREBASE_DB_URL,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT,
   });
   _db = getDatabase(app);
   initPerformance(app); // Firebase Performance Monitoring — 7th Google service

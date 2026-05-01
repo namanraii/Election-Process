@@ -20,7 +20,7 @@ import {
   getPerformance,
   trace as perfTrace,
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-performance.js";
-import { logger } from "./logger.js";
+import { logger } from "./logger.ts";
 
 /** @type {import("firebase/performance").FirebasePerformance|null} */
 let _perf = null;

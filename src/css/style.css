@@ -1,0 +1,9 @@
+/* ============================================
+   ElectionIQ — Main CSS Entry Point (style.css)
+   Imports modular stylesheets in dependency order.
+   ============================================ */
+
+@import "./variables.css";
+@import "./layout.css";
+@import "./map.css";
+@import "./chat.css";

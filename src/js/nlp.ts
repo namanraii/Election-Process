@@ -20,8 +20,8 @@
  * @see https://cloud.google.com/natural-language/docs/reference/rest/v1/documents/analyzeEntities
  */
 
-import { fetchWithTimeout } from "./utils.js";
-import { logger } from "./logger.js";
+import { fetchWithTimeout } from "./utils.ts";
+import { logger } from "./logger.ts";
 const NL_ENDPOINT =
   "https://language.googleapis.com/v1/documents:analyzeEntities";
 
@@ -65,14 +65,14 @@ const NL_TIMEOUT_MS = 5_000;
  * // annotation.sentiment → 0.1 (neutral positive)
  */
 export async function analyseQuery(text) {
-  if (!text || !window.ENV?.MAPS_API_KEY) {
+  if (!text || !import.meta.env.VITE_MAPS_API_KEY) {
     return _emptyAnnotation();
   }
 
   try {
     const [entitiesRes, sentimentRes] = await Promise.all([
       fetchWithTimeout(
-        `${NL_ENDPOINT}?key=${window.ENV.MAPS_API_KEY}`,
+        `${NL_ENDPOINT}?key=${import.meta.env.VITE_MAPS_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -84,7 +84,7 @@ export async function analyseQuery(text) {
         NL_TIMEOUT_MS,
       ),
       fetchWithTimeout(
-        `${NL_SENTIMENT_ENDPOINT}?key=${window.ENV.MAPS_API_KEY}`,
+        `${NL_SENTIMENT_ENDPOINT}?key=${import.meta.env.VITE_MAPS_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -26,7 +26,7 @@ import {
   logEvent,
   setUserProperties,
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
-import { logger } from "./logger.js";
+import { logger } from "./logger.ts";
 
 /** @type {import("firebase/analytics").Analytics|null} GA4 analytics instance */
 let _analytics = null;

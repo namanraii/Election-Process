@@ -20,7 +20,7 @@
  * @see https://developers.google.com/maps/documentation/javascript/places
  */
 
-import { logger } from "./logger.js";
+import { logger } from "./logger.ts";
 
 /** @type {google.maps.Map|null} Singleton map instance (lazy-initialised on first location query) */
 let _map = null;

@@ -25,10 +25,10 @@
  * @see functions/index.js for the Cloud Function implementation
  */
 
-import { askGemini } from "./gemini.js";
-import { fetchWithTimeout } from "./utils.js";
-import { startTrace } from "./perf.js";
-import { logger } from "./logger.js";
+import { askGemini } from "./gemini.ts";
+import { fetchWithTimeout } from "./utils.ts";
+import { startTrace } from "./perf.ts";
+import { logger } from "./logger.ts";
 
 /**
  * @constant {string} Deployed Cloud Function endpoint.

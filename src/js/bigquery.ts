@@ -22,15 +22,15 @@
  * @see https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
  */
 
-import { fetchWithTimeout, uniqueId } from "./utils.js";
-import { logger } from "./logger.js";
+import { fetchWithTimeout, uniqueId } from "./utils.ts";
+import { logger } from "./logger.ts";
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
 /** @constant {string} Google Cloud project ID */
-const BQ_PROJECT = window.ENV?.FIREBASE_PROJECT_ID || "electioniq-project";
+const BQ_PROJECT = import.meta.env.VITE_FIREBASE_PROJECT_ID || "electioniq-project";
 
 /** @constant {string} BigQuery dataset for all civic analytics */
 const BQ_DATASET = "civic_analytics";
@@ -129,7 +129,7 @@ export async function streamCivicSnapshot(milestones, phases) {
  * @private
  */
 async function _insertRows(table, rows) {
-  if (!window.ENV?.MAPS_API_KEY) {
+  if (!import.meta.env.VITE_MAPS_API_KEY) {
     return;
   }
 
@@ -144,7 +144,7 @@ async function _insertRows(table, rows) {
 
   try {
     const res = await fetchWithTimeout(
-      `${_bqInsertUrl(table)}?key=${window.ENV.MAPS_API_KEY}`,
+      `${_bqInsertUrl(table)}?key=${import.meta.env.VITE_MAPS_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

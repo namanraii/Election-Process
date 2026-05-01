@@ -1,5 +1,10 @@
 {
-  "extends": "eslint:recommended",
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
   "env": {
     "browser": true,
     "node": true,
@@ -10,10 +15,12 @@
   },
   "parserOptions": {
     "ecmaVersion": 2022,
-    "sourceType": "module"
+    "sourceType": "module",
+    "project": "./tsconfig.json"
   },
   "rules": {
-    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-explicit-any": "warn",
     "no-console": ["warn", { "allow": ["debug", "info", "warn", "error"] }],
     "eqeqeq": ["error", "always"],
     "curly": "error",
@@ -22,11 +29,9 @@
     "prefer-arrow-callback": "error",
     "arrow-body-style": ["error", "as-needed"],
     "no-duplicate-imports": "error",
-    "no-shadow": "error",
     "consistent-return": "warn",
     "no-throw-literal": "error",
     "radix": "error",
-    "no-implicit-coercion": "warn",
     "prefer-template": "error",
     "object-shorthand": "error",
     "no-param-reassign": ["warn", { "props": false }]
