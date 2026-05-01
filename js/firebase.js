@@ -10,13 +10,15 @@
  *    Watches the `milestones`, `phases`, `faqs`, and `alerts` nodes.
  * @see https://firebase.google.com/docs/database/web/read-and-write
  */
-import { initializeApp } from
-  "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getDatabase, ref, onValue } from
-  "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 import { initPerformance } from "./perf.js";
-import { initAuth }        from "./auth.js";
-import { initAnalytics }   from "./analytics.js";
+import { initAuth } from "./auth.js";
+import { initAnalytics } from "./analytics.js";
 
 /** @type {import("firebase/database").Database} */
 let _db;
@@ -39,14 +41,14 @@ const WATCHED_NODES = ["milestones", "phases", "faqs", "alerts"];
  */
 export async function initFirebase() {
   const app = initializeApp({
-    apiKey:            window.ENV.FIREBASE_API_KEY,
-    authDomain:        window.ENV.FIREBASE_AUTH_DOMAIN,
-    databaseURL:       window.ENV.FIREBASE_DB_URL,
-    projectId:         window.ENV.FIREBASE_PROJECT_ID,
-    storageBucket:     window.ENV.FIREBASE_STORAGE,
+    apiKey: window.ENV.FIREBASE_API_KEY,
+    authDomain: window.ENV.FIREBASE_AUTH_DOMAIN,
+    databaseURL: window.ENV.FIREBASE_DB_URL,
+    projectId: window.ENV.FIREBASE_PROJECT_ID,
+    storageBucket: window.ENV.FIREBASE_STORAGE,
     messagingSenderId: window.ENV.FIREBASE_SENDER_ID,
-    appId:             window.ENV.FIREBASE_APP_ID,
-    measurementId:     window.ENV.FIREBASE_MEASUREMENT,
+    appId: window.ENV.FIREBASE_APP_ID,
+    measurementId: window.ENV.FIREBASE_MEASUREMENT,
   });
   _db = getDatabase(app);
   initPerformance(app); // Firebase Performance Monitoring — 7th Google service
@@ -57,13 +59,15 @@ export async function initFirebase() {
   // Google Analytics 4 via Firebase Analytics — event tracking
   initAnalytics(app, uid);
 
-  WATCHED_NODES.forEach(node => {
-    onValue(ref(_db, node), snap => {
+  WATCHED_NODES.forEach((node) => {
+    onValue(ref(_db, node), (snap) => {
       _state[node] = snap.val() || {};
-      if (node === "alerts") {_handleNewAlerts(_state.alerts);}
+      if (node === "alerts") {
+        _handleNewAlerts(_state.alerts);
+      }
       if (node === "phases" || node === "milestones") {
         window.dispatchEvent(
-          new CustomEvent("electionstate-update", { detail: _state })
+          new CustomEvent("electionstate-update", { detail: _state }),
         );
       }
     });
@@ -80,7 +84,6 @@ export function getLiveContext() {
   return { ..._state };
 }
 
-
 /**
  * Dispatch a `civic-alert` event for any alerts received within the last 90 seconds.
  * Prevents re-firing stale alerts from a previous Firebase session.
@@ -90,12 +93,13 @@ export function getLiveContext() {
  * @private
  */
 function _handleNewAlerts(alerts) {
-  if (!alerts || typeof alerts !== "object") {return;}
-  const recent = Object.values(alerts)
-    .filter(a => a?.timestamp && (Date.now() / 1000 - a.timestamp) < 90);
+  if (!alerts || typeof alerts !== "object") {
+    return;
+  }
+  const recent = Object.values(alerts).filter(
+    (a) => a?.timestamp && Date.now() / 1000 - a.timestamp < 90,
+  );
   if (recent.length) {
-    window.dispatchEvent(
-      new CustomEvent("civic-alert", { detail: recent[0] })
-    );
+    window.dispatchEvent(new CustomEvent("civic-alert", { detail: recent[0] }));
   }
 }

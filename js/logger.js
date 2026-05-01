@@ -23,10 +23,10 @@
  */
 const LEVELS = {
   DEBUG: 1,
-  INFO:  2,
-  WARN:  3,
+  INFO: 2,
+  WARN: 3,
   ERROR: 4,
-  NONE:  5,
+  NONE: 5,
 };
 
 /** @type {number} Active log level — defaults to INFO */
@@ -34,9 +34,14 @@ let _currentLevel = LEVELS.INFO;
 
 // Try to load override from localStorage safely (fails silently in incognito)
 try {
-  if (typeof window !== "undefined" && window.localStorage?.getItem("LOG_LEVEL")) {
+  if (
+    typeof window !== "undefined" &&
+    window.localStorage?.getItem("LOG_LEVEL")
+  ) {
     const override = window.localStorage.getItem("LOG_LEVEL").toUpperCase();
-    if (LEVELS[override] !== undefined) {_currentLevel = LEVELS[override];}
+    if (LEVELS[override] !== undefined) {
+      _currentLevel = LEVELS[override];
+    }
   }
 } catch (_e) {
   // Ignore localStorage access errors (incognito mode, permissions)
@@ -122,6 +127,8 @@ export const logger = {
    * @returns {void}
    */
   setLevel: (level) => {
-    if (LEVELS[level] !== undefined) {_currentLevel = LEVELS[level];}
+    if (LEVELS[level] !== undefined) {
+      _currentLevel = LEVELS[level];
+    }
   },
 };

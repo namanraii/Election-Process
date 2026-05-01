@@ -8,7 +8,6 @@
 import { classifyIntent, classifyIntentAll } from "../js/intent.js";
 
 describe("intent classification — single intent", () => {
-
   // ---- registration -------------------------------------------------------
   test("classifies 'register' keyword → registration", () => {
     expect(classifyIntent("how do i register to vote?")).toBe("registration");
@@ -76,7 +75,9 @@ describe("intent classification — single intent", () => {
     expect(classifyIntent("how are votes counted?")).toBe("results");
   });
   test("classifies 'winner' keyword → results", () => {
-    expect(classifyIntent("when will the winner be announced?")).toBe("results");
+    expect(classifyIntent("when will the winner be announced?")).toBe(
+      "results",
+    );
   });
   test("classifies 'certif' keyword → results", () => {
     expect(classifyIntent("when is certification?")).toBe("results");
@@ -129,7 +130,9 @@ describe("intent classification — single intent", () => {
 
 describe("intent classification — multi-intent", () => {
   test("classifyIntentAll returns multiple matching intents", () => {
-    const intents = classifyIntentAll("explain what happens after you register to vote");
+    const intents = classifyIntentAll(
+      "explain what happens after you register to vote",
+    );
     expect(intents).toContain("registration");
     expect(intents).toContain("process");
   });

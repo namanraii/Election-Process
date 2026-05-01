@@ -16,8 +16,10 @@
  *
  * @see https://firebase.google.com/docs/perf-mon/custom-code-traces?platform=web
  */
-import { getPerformance, trace as perfTrace } from
-  "https://www.gstatic.com/firebasejs/10.7.0/firebase-performance.js";
+import {
+  getPerformance,
+  trace as perfTrace,
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-performance.js";
 import { logger } from "./logger.js";
 
 /** @type {import("firebase/performance").FirebasePerformance|null} */
@@ -54,13 +56,19 @@ export function initPerformance(app) {
  * stop(); // Records the Gemini latency to Firebase Performance dashboard
  */
 export function startTrace(traceName) {
-  if (!_perf) {return () => {};} // no-op if not initialised
+  if (!_perf) {
+    return () => {};
+  } // no-op if not initialised
 
   try {
     const t = perfTrace(_perf, traceName);
     t.start();
     return () => {
-      try { t.stop(); } catch { /* swallow stop errors silently */ }
+      try {
+        t.stop();
+      } catch {
+        /* swallow stop errors silently */
+      }
     };
   } catch (e) {
     logger.warn("perf", `Could not start trace "${traceName}":`, e.message);
@@ -78,10 +86,14 @@ export function startTrace(traceName) {
  * @returns {void}
  */
 export function recordMetric(traceName, metricName, value) {
-  if (!_perf || typeof value !== "number") {return;}
+  if (!_perf || typeof value !== "number") {
+    return;
+  }
   try {
     const t = perfTrace(_perf, traceName);
     t.putMetric(metricName, value);
     t.record(0, 1); // Record a 1ms dummy duration — metric carrier only
-  } catch { /* non-fatal */ }
+  } catch {
+    /* non-fatal */
+  }
 }

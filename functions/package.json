@@ -3,16 +3,18 @@
   "version": "1.0.0",
   "description": "ElectionIQ Cloud Functions — authenticated Vertex AI proxy + BigQuery analytics backend",
   "license": "MIT",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "main": "index.js",
   "scripts": {
     "start": "node_modules/.bin/functions-framework --target=electionIQAssist",
-    "test":  "node --test"
+    "test": "node --test"
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^3.3.0",
-    "@google-cloud/vertexai":           "^1.1.0",
-    "@google-cloud/bigquery":           "^7.3.0",
-    "@google-cloud/language":           "^6.0.0"
+    "@google-cloud/vertexai": "^1.1.0",
+    "@google-cloud/bigquery": "^7.3.0",
+    "@google-cloud/language": "^6.0.0"
   }
 }

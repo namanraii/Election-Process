@@ -21,7 +21,7 @@
  */
 
 import { fetchWithTimeout } from "./utils.js";
-import { logger }           from "./logger.js";
+import { logger } from "./logger.js";
 const NL_ENDPOINT =
   "https://language.googleapis.com/v1/documents:analyzeEntities";
 
@@ -65,36 +65,54 @@ const NL_TIMEOUT_MS = 5_000;
  * // annotation.sentiment → 0.1 (neutral positive)
  */
 export async function analyseQuery(text) {
-  if (!text || !window.ENV?.MAPS_API_KEY) {return _emptyAnnotation();}
+  if (!text || !window.ENV?.MAPS_API_KEY) {
+    return _emptyAnnotation();
+  }
 
   try {
     const [entitiesRes, sentimentRes] = await Promise.all([
-      fetchWithTimeout(`${NL_ENDPOINT}?key=${window.ENV.MAPS_API_KEY}`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ document: { type: "PLAIN_TEXT", content: text }, encodingType: "UTF8" }),
-      }, NL_TIMEOUT_MS),
-      fetchWithTimeout(`${NL_SENTIMENT_ENDPOINT}?key=${window.ENV.MAPS_API_KEY}`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ document: { type: "PLAIN_TEXT", content: text }, encodingType: "UTF8" }),
-      }, NL_TIMEOUT_MS),
+      fetchWithTimeout(
+        `${NL_ENDPOINT}?key=${window.ENV.MAPS_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            document: { type: "PLAIN_TEXT", content: text },
+            encodingType: "UTF8",
+          }),
+        },
+        NL_TIMEOUT_MS,
+      ),
+      fetchWithTimeout(
+        `${NL_SENTIMENT_ENDPOINT}?key=${window.ENV.MAPS_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            document: { type: "PLAIN_TEXT", content: text },
+            encodingType: "UTF8",
+          }),
+        },
+        NL_TIMEOUT_MS,
+      ),
     ]);
 
-    const entitiesData  = entitiesRes.ok  ? await entitiesRes.json()  : {};
+    const entitiesData = entitiesRes.ok ? await entitiesRes.json() : {};
     const sentimentData = sentimentRes.ok ? await sentimentRes.json() : {};
 
     const entities = (entitiesData.entities || [])
       .sort((a, b) => (b.salience ?? 0) - (a.salience ?? 0))
-      .map(e => ({ name: e.name, type: e.type, salience: e.salience ?? 0 }));
+      .map((e) => ({ name: e.name, type: e.type, salience: e.salience ?? 0 }));
 
     const sentiment = sentimentData.documentSentiment?.score ?? 0;
 
     return {
       entities,
       sentiment,
-      locations: entities.filter(e => e.type === "LOCATION").map(e => e.name),
-      events:    entities.filter(e => e.type === "EVENT").map(e => e.name),
+      locations: entities
+        .filter((e) => e.type === "LOCATION")
+        .map((e) => e.name),
+      events: entities.filter((e) => e.type === "EVENT").map((e) => e.name),
     };
   } catch (e) {
     // Non-fatal: NL API failure should never block the chat response
@@ -115,21 +133,29 @@ export async function analyseQuery(text) {
  * // → "NL Entities: Gate D (LOCATION, salience: 0.80)\nDetected locations: Gate D\nQuery sentiment: neutral"
  */
 export function formatAnnotationForContext(annotation) {
-  if (!annotation?.entities?.length) {return "";}
+  if (!annotation?.entities?.length) {
+    return "";
+  }
 
   const topEntities = annotation.entities
     .slice(0, 5)
-    .map(e => `${e.name} (${e.type}, salience: ${e.salience.toFixed(2)})`)
+    .map((e) => `${e.name} (${e.type}, salience: ${e.salience.toFixed(2)})`)
     .join(", ");
 
   const sentimentLabel =
-    annotation.sentiment > 0.25  ? "positive" :
-    annotation.sentiment < -0.25 ? "negative" :
-                                    "neutral";
+    annotation.sentiment > 0.25
+      ? "positive"
+      : annotation.sentiment < -0.25
+        ? "negative"
+        : "neutral";
 
   const parts = [`NL Entities: ${topEntities}`];
-  if (annotation.locations.length) {parts.push(`Detected locations: ${annotation.locations.join(", ")}`);}
-  if (annotation.events.length)    {parts.push(`Detected events: ${annotation.events.join(", ")}`);}
+  if (annotation.locations.length) {
+    parts.push(`Detected locations: ${annotation.locations.join(", ")}`);
+  }
+  if (annotation.events.length) {
+    parts.push(`Detected events: ${annotation.events.join(", ")}`);
+  }
   parts.push(`Query sentiment: ${sentimentLabel}`);
 
   return parts.join("\n");

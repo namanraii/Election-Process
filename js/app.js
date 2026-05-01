@@ -20,22 +20,25 @@
  *  4. Register event listeners for Firebase election state changes and alerts
  */
 
-import { initFirebase, getLiveContext }            from "./firebase.js";
-import { routeAIQuery }                            from "./ai.js";
-import { classifyIntent }                          from "./intent.js";
-import { startProactiveLoop }                      from "./proactive.js";
-import { initMap }                                 from "./maps.js";
+import { initFirebase, getLiveContext } from "./firebase.js";
+import { routeAIQuery } from "./ai.js";
+import { classifyIntent } from "./intent.js";
+import { startProactiveLoop } from "./proactive.js";
+import { initMap } from "./maps.js";
 import { analyseQuery, formatAnnotationForContext } from "./nlp.js";
-import { initTimeline, onMilestoneClick }          from "./timeline.js";
+import { initTimeline, onMilestoneClick } from "./timeline.js";
 import { trackChatMessage, trackPollingPlaceSearch } from "./analytics.js";
-import { streamInteraction, streamCivicSnapshot }  from "./bigquery.js";
+import { streamInteraction, streamCivicSnapshot } from "./bigquery.js";
 import {
-  appendMessage, updateBotMessage,
-  showAlertBanner, hideAlertBanner,
-  updateElectionStatus, consumeInput,
-}                                                  from "./ui.js";
-import { sanitise }                                from "./utils.js";
-import { logger }                                  from "./logger.js";
+  appendMessage,
+  updateBotMessage,
+  showAlertBanner,
+  hideAlertBanner,
+  updateElectionStatus,
+  consumeInput,
+} from "./ui.js";
+import { sanitise } from "./utils.js";
+import { logger } from "./logger.js";
 
 // ---------------------------------------------------------------------------
 // Startup
@@ -46,7 +49,7 @@ import { logger }                                  from "./logger.js";
  * Made globally available so gemini.js can access FAQs, glossary, and phases.
  * @type {Object}
  */
-window.ELECTION = await fetch("data/election.json").then(r => r.json());
+window.ELECTION = await fetch("data/election.json").then((r) => r.json());
 
 initFirebase();
 
@@ -67,10 +70,10 @@ if (document.readyState === "loading") {
 function _onReady() {
   appendMessage(
     "Hi! I'm ElectionIQ, your nonpartisan civic assistant. " +
-    "Ask me anything about elections, or tap a quick action below.",
-    "bot"
+      "Ask me anything about elections, or tap a quick action below.",
+    "bot",
   );
-  startProactiveLoop(msg => appendMessage(msg, "bot", true));
+  startProactiveLoop((msg) => appendMessage(msg, "bot", true));
 
   // Show admin analytics panel if ?admin=1 is present in the URL
   if (new URLSearchParams(window.location.search).get("admin") === "1") {
@@ -89,7 +92,7 @@ function _onReady() {
  *
  * @listens {CustomEvent} electionstate-update
  */
-window.addEventListener("electionstate-update", e => {
+window.addEventListener("electionstate-update", (e) => {
   const state = e.detail;
   updateElectionStatus(state.phases?.label || "Connected");
 
@@ -99,9 +102,9 @@ window.addEventListener("electionstate-update", e => {
   // Wire each milestone to auto-ask Gemini when clicked
   const MILESTONE_LABELS = {
     registrationDeadline: "When is the voter registration deadline?",
-    earlyVotingStart:     "When does early voting start?",
-    electionDay:          "What should I know about Election Day?",
-    certificationDate:    "What is the results certification process?",
+    earlyVotingStart: "When does early voting start?",
+    electionDay: "What should I know about Election Day?",
+    certificationDate: "What is the results certification process?",
   };
   Object.entries(MILESTONE_LABELS).forEach(([id, question]) => {
     onMilestoneClick(id, () => window.quickAsk(question));
@@ -114,7 +117,7 @@ window.addEventListener("electionstate-update", e => {
  * Fires when Firebase pushes a new civic alert.
  * @listens {CustomEvent} civic-alert
  */
-window.addEventListener("civic-alert", e => {
+window.addEventListener("civic-alert", (e) => {
   showAlertBanner(e.detail.message);
 });
 
@@ -140,16 +143,18 @@ window.addEventListener("civic-alert", e => {
 export async function handleSubmit(e) {
   e.preventDefault();
   const raw = consumeInput(); // ui.js — reads + clears input atomically
-  if (!raw) {return;}
+  if (!raw) {
+    return;
+  }
 
-  const text      = sanitise(raw);      // utils.js — centralised sanitisation
+  const text = sanitise(raw); // utils.js — centralised sanitisation
   const startTime = performance.now();
   appendMessage(text, "user");
-  const thinking  = appendMessage("…", "bot");
+  const thinking = appendMessage("…", "bot");
 
   try {
     const intent = classifyIntent(text);
-    const ctx    = getLiveContext();
+    const ctx = getLiveContext();
 
     // Track civic interaction in Google Analytics 4
     trackChatMessage(intent, false);
@@ -158,8 +163,10 @@ export async function handleSubmit(e) {
     // Extracts state names, election offices, and dates to enable
     // state-specific answers (e.g. "vote in California" → LOCATION: California)
     const nlAnnotation = await analyseQuery(text);
-    const nlContext    = formatAnnotationForContext(nlAnnotation);
-    if (nlContext) {ctx.nlEntities = nlContext;}
+    const nlContext = formatAnnotationForContext(nlAnnotation);
+    if (nlContext) {
+      ctx.nlEntities = nlContext;
+    }
 
     // Stage 2: Toggle left panel based on intent
     // "location" intent → show Google Maps polling place finder
@@ -176,15 +183,14 @@ export async function handleSubmit(e) {
     // BigQuery Streaming Insert — logs every interaction for civic analytics
     // Fields: query, intent, response, latency, election phase
     streamInteraction({
-      session_id:    window._uid || "anonymous",
-      query:         text,
+      session_id: window._uid || "anonymous",
+      query: text,
       intent,
-      response:      reply,
-      response_ms:   Math.round(performance.now() - startTime),
+      response: reply,
+      response_ms: Math.round(performance.now() - startTime),
       election_phase: ctx.phases?.current || "unknown",
-      ts:            Date.now(),
+      ts: Date.now(),
     }); // Fire-and-forget — never awaited to avoid blocking UI
-
   } catch (err) {
     logger.error("app", "Chat pipeline error:", err.message);
     updateBotMessage(thinking, "Sorry, I couldn't get that. Please try again.");
@@ -216,10 +222,12 @@ if (alertCloseBtn) {
 }
 
 // Wire up all action chips
-document.querySelectorAll(".chip").forEach(chip => {
+document.querySelectorAll(".chip").forEach((chip) => {
   chip.addEventListener("click", () => {
     const query = chip.getAttribute("data-query");
-    if (query) { quickAsk(query); }
+    if (query) {
+      quickAsk(query);
+    }
   });
 });
 
@@ -237,19 +245,21 @@ document.querySelectorAll(".chip").forEach(chip => {
  * @private
  */
 function _toggleLeftPanel(showMap) {
-  const mapEl      = document.getElementById("map");
+  const mapEl = document.getElementById("map");
   const timelineEl = document.getElementById("timeline-container");
-  const legendEl   = document.getElementById("crowd-legend");
-  if (!mapEl || !timelineEl) {return;}
+  const legendEl = document.getElementById("crowd-legend");
+  if (!mapEl || !timelineEl) {
+    return;
+  }
 
   if (showMap) {
-    mapEl.hidden      = false;
-    legendEl.hidden   = false;
+    mapEl.hidden = false;
+    legendEl.hidden = false;
     timelineEl.hidden = true;
     initMap(); // lazy-init map on first location query
   } else {
-    mapEl.hidden      = true;
-    legendEl.hidden   = true;
+    mapEl.hidden = true;
+    legendEl.hidden = true;
     timelineEl.hidden = false;
   }
 }
@@ -264,7 +274,9 @@ function _toggleLeftPanel(showMap) {
  */
 function _initAdminPanel() {
   const panel = document.getElementById("admin-panel");
-  if (!panel) {return;}
+  if (!panel) {
+    return;
+  }
   panel.hidden = false;
   logger.info("app", "Admin analytics panel activated");
 }

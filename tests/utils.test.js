@@ -54,8 +54,9 @@ describe("sanitise", () => {
   });
 
   test("preserves normal text unchanged", () => {
-    expect(sanitise("How long is the queue at Gate A?"))
-      .toBe("How long is the queue at Gate A?");
+    expect(sanitise("How long is the queue at Gate A?")).toBe(
+      "How long is the queue at Gate A?",
+    );
   });
 
   test("handles XSS attempt gracefully", () => {

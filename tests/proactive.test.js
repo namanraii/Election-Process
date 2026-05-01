@@ -8,34 +8,39 @@ import { jest } from "@jest/globals";
 
 jest.unstable_mockModule("../js/firebase.js", () => ({
   getLiveContext: jest.fn(() => ({})),
-  initFirebase:   jest.fn(),
+  initFirebase: jest.fn(),
 }));
 jest.unstable_mockModule("../js/analytics.js", () => ({
   trackProactiveAlert: jest.fn(),
-  trackChatMessage:    jest.fn(),
+  trackChatMessage: jest.fn(),
   trackPollingPlaceSearch: jest.fn(),
-  initAnalytics:       jest.fn(),
+  initAnalytics: jest.fn(),
 }));
 jest.unstable_mockModule("../js/perf.js", () => ({
-  startTrace:    jest.fn(() => jest.fn()),
-  recordMetric:  jest.fn(),
+  startTrace: jest.fn(() => jest.fn()),
+  recordMetric: jest.fn(),
   initPerformance: jest.fn(),
 }));
 jest.unstable_mockModule("../js/gemini.js", () => ({
   askGeminiProactive: jest.fn(async () => "Test alert message"),
-  askGemini:          jest.fn(async () => "Test response"),
+  askGemini: jest.fn(async () => "Test response"),
 }));
 jest.unstable_mockModule("../js/logger.js", () => ({
-  logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(), setLevel: jest.fn() },
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    setLevel: jest.fn(),
+  },
 }));
 
 const { evaluateTrigger } = await import("../js/proactive.js");
 
 const ONE_DAY = 86_400_000;
-const now     = Date.now();
+const now = Date.now();
 
 describe("evaluateTrigger — proactive civic alerts", () => {
-
   // ---- reg-closing --------------------------------------------------------
   test("fires 'reg-closing' when deadline is exactly today (0 days)", () => {
     const ctx = { milestones: { registrationDeadline: now } };

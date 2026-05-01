@@ -29,10 +29,10 @@ const { LanguageServiceClient } = require("@google-cloud/language");
 // Google Cloud Configuration
 // ---------------------------------------------------------------------------
 
-const PROJECT_ID  = process.env.GCP_PROJECT || "gen-lang-client-0637064197";
-const LOCATION    = "us-central1";
-const BQ_DATASET  = "civic_analytics";
-const BQ_TABLE    = "civic_interactions";
+const PROJECT_ID = process.env.GCP_PROJECT || "gen-lang-client-0637064197";
+const LOCATION = "us-central1";
+const BQ_DATASET = "civic_analytics";
+const BQ_TABLE = "civic_interactions";
 
 /** @type {VertexAI} Vertex AI client (uses service account auth automatically) */
 const vertex = new VertexAI({ project: PROJECT_ID, location: LOCATION });
@@ -90,15 +90,23 @@ functions.http("electionIQAssist", async (req, res) => {
     return;
   }
 
-  const { message, context, sessionId = "anonymous", intent = "general" } = req.body || {};
+  const {
+    message,
+    context,
+    sessionId = "anonymous",
+    intent = "general",
+  } = req.body || {};
 
   if (!message || typeof message !== "string") {
     res.status(400).json({ error: "message is required and must be a string" });
     return;
   }
 
-  const sanitised = message.replace(/[<>&"'`]/g, "").substring(0, 300).trim();
-  const startMs   = Date.now();
+  const sanitised = message
+    .replace(/[<>&"'`]/g, "")
+    .substring(0, 300)
+    .trim();
+  const startMs = Date.now();
 
   try {
     // ------------------------------------------------------------------
@@ -110,8 +118,8 @@ functions.http("electionIQAssist", async (req, res) => {
         document: { content: sanitised, type: "PLAIN_TEXT" },
       });
       entities = (nlResult.entities || [])
-        .filter(e => e.salience > 0.1)
-        .map(e => ({ name: e.name, type: e.type }));
+        .filter((e) => e.salience > 0.1)
+        .map((e) => ({ name: e.name, type: e.type }));
     } catch (_nlErr) {
       // Non-fatal — continue without NL enrichment
       console.warn("[ElectionIQ:cf] NL extraction skipped/failed.");
@@ -136,23 +144,26 @@ functions.http("electionIQAssist", async (req, res) => {
       ],
     });
 
-    const contextBlock = typeof context === "object"
-      ? `LIVE ELECTION DATA: ${JSON.stringify(context)}`
-      : String(context || "");
+    const contextBlock =
+      typeof context === "object"
+        ? `LIVE ELECTION DATA: ${JSON.stringify(context)}`
+        : String(context || "");
 
     const nlBlock = entities.length
-      ? `\nDetected entities: ${entities.map(e => `${e.name}(${e.type})`).join(", ")}`
+      ? `\nDetected entities: ${entities.map((e) => `${e.name}(${e.type})`).join(", ")}`
       : "";
 
     const result = await model.generateContent({
-      contents: [{
-        role:  "user",
-        parts: [{ text: `${contextBlock}${nlBlock}\n\nUser: ${sanitised}` }],
-      }],
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: `${contextBlock}${nlBlock}\n\nUser: ${sanitised}` }],
+        },
+      ],
     });
 
-    const reply       = result.response.candidates[0].content.parts[0].text.trim();
-    const responseMs  = Date.now() - startMs;
+    const reply = result.response.candidates[0].content.parts[0].text.trim();
+    const responseMs = Date.now() - startMs;
 
     // ------------------------------------------------------------------
     // Stage 3: BigQuery — server-side streaming insert (more reliable than browser)
@@ -161,22 +172,23 @@ functions.http("electionIQAssist", async (req, res) => {
       await bigquery
         .dataset(BQ_DATASET)
         .table(BQ_TABLE)
-        .insert([{
-          session_id:   sessionId,
-          query:        sanitised,
-          intent,
-          response:     reply,
-          response_ms:  responseMs,
-          entities_json: JSON.stringify(entities),
-          ts:           new Date().toISOString(),
-        }]);
+        .insert([
+          {
+            session_id: sessionId,
+            query: sanitised,
+            intent,
+            response: reply,
+            response_ms: responseMs,
+            entities_json: JSON.stringify(entities),
+            ts: new Date().toISOString(),
+          },
+        ]);
     } catch (_bqErr) {
       // Non-fatal — analytics failure never blocks the response
       console.warn("[ElectionIQ:cf] BigQuery insert skipped/failed.");
     }
 
     res.status(200).json({ reply, entities, response_ms: responseMs });
-
   } catch (err) {
     console.error("[ElectionIQ:cf] Pipeline error:", err.message);
     res.status(500).json({ error: "AI pipeline error. Please retry." });

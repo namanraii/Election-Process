@@ -15,7 +15,7 @@
  */
 
 import { fetchWithTimeout } from "./utils.js";
-import { logger }           from "./logger.js";
+import { logger } from "./logger.js";
 
 /** @constant {string} Routes API v2 computeRoutes endpoint */
 const ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
@@ -51,27 +51,33 @@ const TIMEOUT_MS = 8_000;
  */
 export async function computeRoute(origin, destination) {
   const body = {
-    origin:      { location: { latLng: origin } },
+    origin: { location: { latLng: origin } },
     destination: { location: { latLng: destination } },
-    travelMode:  "WALK",
+    travelMode: "WALK",
     computeAlternativeRoutes: false,
     routeModifiers: { avoidHighways: true },
   };
 
   let data;
   try {
-    const res = await fetchWithTimeout(ROUTES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type":    "application/json",
-        "X-Goog-Api-Key":  window.ENV.ROUTES_API_KEY,
-        "X-Goog-FieldMask":
-          "routes.duration,routes.distanceMeters,routes.legs.steps.navigationInstruction",
+    const res = await fetchWithTimeout(
+      ROUTES_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": window.ENV.ROUTES_API_KEY,
+          "X-Goog-FieldMask":
+            "routes.duration,routes.distanceMeters,routes.legs.steps.navigationInstruction",
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    }, TIMEOUT_MS);
+      TIMEOUT_MS,
+    );
 
-    if (!res.ok) {throw new Error(`Routes API error HTTP ${res.status}`);}
+    if (!res.ok) {
+      throw new Error(`Routes API error HTTP ${res.status}`);
+    }
     data = await res.json();
   } catch (e) {
     logger.warn("routes", "Route computation failed:", e.message);
@@ -79,16 +85,18 @@ export async function computeRoute(origin, destination) {
   }
 
   const route = data.routes?.[0];
-  if (!route) {throw new Error("Routes API returned no valid route");}
+  if (!route) {
+    throw new Error("Routes API returned no valid route");
+  }
 
-  const distM   = route.distanceMeters ?? 0;
-  const durSec  = parseInt(route.duration, 10) || 0;
-  const durMin  = Math.round(durSec / 60);
+  const distM = route.distanceMeters ?? 0;
+  const durSec = parseInt(route.duration, 10) || 0;
+  const durMin = Math.round(durSec / 60);
 
   return {
-    summary:     `${Math.round(distM)}m walk — about ${durMin} min`,
-    narration:   `Your polling station is a ${durMin}-minute walk away.`,
-    distanceM:   distM,
+    summary: `${Math.round(distM)}m walk — about ${durMin} min`,
+    narration: `Your polling station is a ${durMin}-minute walk away.`,
+    distanceM: distM,
     durationSec: durSec,
   };
 }

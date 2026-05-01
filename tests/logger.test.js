@@ -17,8 +17,8 @@ describe("logger.js — structured logging", () => {
   beforeEach(() => {
     consoleSpy = {
       debug: jest.spyOn(console, "debug").mockImplementation(() => {}),
-      info:  jest.spyOn(console, "info").mockImplementation(() => {}),
-      warn:  jest.spyOn(console, "warn").mockImplementation(() => {}),
+      info: jest.spyOn(console, "info").mockImplementation(() => {}),
+      warn: jest.spyOn(console, "warn").mockImplementation(() => {}),
       error: jest.spyOn(console, "error").mockImplementation(() => {}),
     };
     logger.setLevel("DEBUG"); // Allow all levels for testing
@@ -92,7 +92,7 @@ describe("logger.js — structured logging", () => {
     expect(consoleSpy.info).toHaveBeenCalledWith(
       expect.stringContaining("Message"),
       { extra: "data" },
-      42
+      42,
     );
   });
 

@@ -1,190 +1,308 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="ElectionIQ — Your AI-powered nonpartisan civic education assistant. Understand elections, find polling places, and get step-by-step guidance on the voting process.">
-  <meta name="theme-color" content="#1b7a5a">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com https://maps.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseio.com https://firebasestorage.googleapis.com wss://*.firebaseio.com; frame-src https://*.google.com; worker-src blob:;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="ElectionIQ — Your AI-powered nonpartisan civic education assistant. Understand elections, find polling places, and get step-by-step guidance on the voting process."
+    />
+    <meta name="theme-color" content="#1b7a5a" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com https://maps.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseio.com https://firebasestorage.googleapis.com wss://*.firebaseio.com; frame-src https://*.google.com; worker-src blob:;"
+    />
 
-  <!-- Resource hints for faster connection to Google APIs -->
-  <link rel="preconnect" href="https://maps.googleapis.com">
-  <link rel="preconnect" href="https://maps.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://generativelanguage.googleapis.com">
+    <!-- Resource hints for faster connection to Google APIs -->
+    <link rel="preconnect" href="https://maps.googleapis.com" />
+    <link rel="preconnect" href="https://maps.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://generativelanguage.googleapis.com" />
 
-  <title>ElectionIQ — Civic AI Assistant</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <script src="config.js"></script>
-</head>
-<body>
+    <title>ElectionIQ — Civic AI Assistant</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="config.js"></script>
+  </head>
+  <body>
+    <!-- Accessibility: Skip to main content for keyboard users -->
+    <a href="#main" class="skip-link">Skip to main content</a>
 
-<!-- Accessibility: Skip to main content for keyboard users -->
-<a href="#main" class="skip-link">Skip to main content</a>
-
-<!-- =========================================================
+    <!-- =========================================================
      CIVIC ALERT BANNER — proactive notifications from Firebase
      role="alert" aria-live="assertive" for immediate SR announcement
      ========================================================= -->
-<div id="alert-banner" role="alert" aria-live="assertive" aria-atomic="true" hidden>
-  <span id="alert-icon" aria-hidden="true">📢</span>
-  <span id="alert-text"></span>
-  <button id="alert-close" aria-label="Dismiss alert">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <line x1="18" y1="6" x2="6" y2="18"></line>
-      <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
-  </button>
-</div>
+    <div
+      id="alert-banner"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      hidden
+    >
+      <span id="alert-icon" aria-hidden="true">📢</span>
+      <span id="alert-text"></span>
+      <button id="alert-close" aria-label="Dismiss alert">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
 
-<!-- =========================================================
+    <!-- =========================================================
      MAIN APPLICATION SHELL
      Two-column layout: left = timeline/map, right = AI chat
      ========================================================= -->
-<main id="main" class="shell" role="main">
+    <main id="main" class="shell" role="main">
+      <!-- Left Panel: Election Timeline (default) + Polling Place Map (location queries) -->
+      <section
+        class="map-panel"
+        aria-label="Election timeline and polling place map"
+      >
+        <!-- Interactive Election Timeline — rendered by timeline.js from Firebase milestones -->
+        <div
+          id="timeline-container"
+          role="img"
+          aria-label="Interactive election timeline. Click any milestone to learn more."
+          tabindex="0"
+        ></div>
 
-  <!-- Left Panel: Election Timeline (default) + Polling Place Map (location queries) -->
-  <section class="map-panel" aria-label="Election timeline and polling place map">
+        <!-- Google Maps Polling Place Finder — shown for location intent queries only -->
+        <div
+          id="map"
+          aria-label="Google Maps showing nearby polling stations"
+          hidden
+        ></div>
 
-    <!-- Interactive Election Timeline — rendered by timeline.js from Firebase milestones -->
-    <div id="timeline-container"
-         role="img"
-         aria-label="Interactive election timeline. Click any milestone to learn more."
-         tabindex="0"></div>
+        <!-- Map legend — hidden until map is shown -->
+        <div
+          id="crowd-legend"
+          aria-label="Polling station status legend"
+          role="legend"
+          hidden
+        >
+          <span class="dot green" aria-hidden="true"></span><span>Open</span>
+          <span class="dot amber" aria-hidden="true"></span
+          ><span>Early voting</span>
+          <span class="dot red" aria-hidden="true"></span><span>Closed</span>
+        </div>
+      </section>
 
-    <!-- Google Maps Polling Place Finder — shown for location intent queries only -->
-    <div id="map"
-         aria-label="Google Maps showing nearby polling stations"
-         hidden></div>
+      <!-- Right Panel: AI Chat Interface -->
+      <section
+        class="chat-panel"
+        aria-label="Chat with ElectionIQ civic assistant"
+      >
+        <header class="chat-header">
+          <div class="chat-logo" aria-hidden="true">EQ</div>
+          <div>
+            <h1>ElectionIQ</h1>
+            <p id="game-status" aria-live="polite" aria-atomic="true">
+              Connecting…
+            </p>
+          </div>
+        </header>
 
-    <!-- Map legend — hidden until map is shown -->
-    <div id="crowd-legend"
-         aria-label="Polling station status legend"
-         role="legend"
-         hidden>
-      <span class="dot green" aria-hidden="true"></span><span>Open</span>
-      <span class="dot amber" aria-hidden="true"></span><span>Early voting</span>
-      <span class="dot red"   aria-hidden="true"></span><span>Closed</span>
-    </div>
-  </section>
+        <!-- Conversation log — role="log" for continuous content, polite for bot messages -->
+        <div
+          id="messages"
+          role="log"
+          aria-live="polite"
+          aria-label="Conversation with ElectionIQ"
+          aria-relevant="additions"
+        ></div>
 
-  <!-- Right Panel: AI Chat Interface -->
-  <section class="chat-panel" aria-label="Chat with ElectionIQ civic assistant">
-    <header class="chat-header">
-      <div class="chat-logo" aria-hidden="true">EQ</div>
-      <div>
-        <h1>ElectionIQ</h1>
-        <p id="game-status" aria-live="polite" aria-atomic="true">Connecting…</p>
-      </div>
-    </header>
+        <!-- Quick-action chips — keyboard accessible with tabindex and role -->
+        <nav class="chips" role="group" aria-label="Quick civic questions">
+          <button class="chip" data-query="How do I register to vote?">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <polyline points="17 11 19 13 23 9"></polyline>
+            </svg>
+            Register to Vote
+          </button>
+          <button class="chip" data-query="Find my polling place">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            Polling Place
+          </button>
+          <button class="chip" data-query="What ID do I need to vote?">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            Voter ID
+          </button>
+          <button
+            class="chip"
+            data-query="Explain the Electoral College step by step"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+              <path d="M2 12h20"></path>
+            </svg>
+            Electoral College
+          </button>
+          <button class="chip" data-query="What is early voting?">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            Early Voting
+          </button>
+          <button class="chip" data-query="How are votes counted?">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+              ></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Vote Counting
+          </button>
+        </nav>
 
-    <!-- Conversation log — role="log" for continuous content, polite for bot messages -->
-    <div id="messages"
-         role="log"
-         aria-live="polite"
-         aria-label="Conversation with ElectionIQ"
-         aria-relevant="additions"></div>
+        <!-- Chat input form -->
+        <form id="chat-form" role="search" aria-label="Ask ElectionIQ">
+          <input
+            type="text"
+            id="user-input"
+            name="query"
+            placeholder="Ask anything about the election process…"
+            aria-label="Type your election question"
+            aria-describedby="input-hint"
+            autocomplete="off"
+            maxlength="300"
+            spellcheck="true"
+          />
+          <button
+            type="submit"
+            id="send-btn"
+            aria-label="Send your question to ElectionIQ"
+          >
+            Send
+          </button>
+        </form>
+        <span id="input-hint" class="visually-hidden">
+          Press Enter or click Send to ask ElectionIQ your civic question.
+        </span>
+      </section>
+    </main>
 
-    <!-- Quick-action chips — keyboard accessible with tabindex and role -->
-    <nav class="chips" role="group" aria-label="Quick civic questions">
-      <button class="chip" data-query="How do I register to vote?">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
-        Register to Vote
-      </button>
-      <button class="chip" data-query="Find my polling place">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-        Polling Place
-      </button>
-      <button class="chip" data-query="What ID do I need to vote?">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-        Voter ID
-      </button>
-      <button class="chip" data-query="Explain the Electoral College step by step">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
-        Electoral College
-      </button>
-      <button class="chip" data-query="What is early voting?">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-        Early Voting
-      </button>
-      <button class="chip" data-query="How are votes counted?">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-        Vote Counting
-      </button>
-    </nav>
-
-    <!-- Chat input form -->
-    <form id="chat-form" role="search" aria-label="Ask ElectionIQ">
-      <input type="text"
-             id="user-input"
-             name="query"
-             placeholder="Ask anything about the election process…"
-             aria-label="Type your election question"
-             aria-describedby="input-hint"
-             autocomplete="off"
-             maxlength="300"
-             spellcheck="true">
-      <button type="submit" id="send-btn" aria-label="Send your question to ElectionIQ">
-        Send
-      </button>
-    </form>
-    <span id="input-hint" class="visually-hidden">
-      Press Enter or click Send to ask ElectionIQ your civic question.
-    </span>
-  </section>
-
-</main>
-
-<!-- =========================================================
+    <!-- =========================================================
      ADMIN ANALYTICS PANEL — visible at ?admin=1
      Powered by BigQuery civic_interactions table
      ========================================================= -->
-<aside id="admin-panel"
-       class="admin-panel"
-       aria-label="Admin analytics dashboard"
-       hidden>
-  <h2>📊 Civic Analytics Dashboard</h2>
-  <p class="admin-subtitle">Powered by BigQuery · <code>civic_analytics.civic_interactions</code></p>
-  <div class="admin-grid">
-    <div class="admin-metric" id="admin-total-queries">
-      <div class="admin-label">Total Queries</div>
-      <div class="admin-value">—</div>
-    </div>
-    <div class="admin-metric" id="admin-top-intent">
-      <div class="admin-label">Top Intent</div>
-      <div class="admin-value">—</div>
-    </div>
-    <div class="admin-metric" id="admin-avg-response">
-      <div class="admin-label">Avg Response (ms)</div>
-      <div class="admin-value">—</div>
-    </div>
-    <div class="admin-metric" id="admin-proactive-count">
-      <div class="admin-label">Proactive Alerts Sent</div>
-      <div class="admin-value">—</div>
-    </div>
-  </div>
-</aside>
+    <aside
+      id="admin-panel"
+      class="admin-panel"
+      aria-label="Admin analytics dashboard"
+      hidden
+    >
+      <h2>📊 Civic Analytics Dashboard</h2>
+      <p class="admin-subtitle">
+        Powered by BigQuery · <code>civic_analytics.civic_interactions</code>
+      </p>
+      <div class="admin-grid">
+        <div class="admin-metric" id="admin-total-queries">
+          <div class="admin-label">Total Queries</div>
+          <div class="admin-value">—</div>
+        </div>
+        <div class="admin-metric" id="admin-top-intent">
+          <div class="admin-label">Top Intent</div>
+          <div class="admin-value">—</div>
+        </div>
+        <div class="admin-metric" id="admin-avg-response">
+          <div class="admin-label">Avg Response (ms)</div>
+          <div class="admin-value">—</div>
+        </div>
+        <div class="admin-metric" id="admin-proactive-count">
+          <div class="admin-label">Proactive Alerts Sent</div>
+          <div class="admin-value">—</div>
+        </div>
+      </div>
+    </aside>
 
-<!-- =========================================================
+    <!-- =========================================================
      SCRIPTS
      app.js: ES module — main app logic
      Maps API: loaded async with ?libraries=places for polling station search
      ========================================================= -->
-<script type="module" src="js/app.js"></script>
-<script>
-  // Dynamically load Maps JS API using the key from config.js (window.ENV)
-  // This avoids hardcoding the API key in source HTML
-  (function() {
-    const s = document.createElement('script');
-    s.src = 'https://maps.googleapis.com/maps/api/js?key='
-      + (window.ENV && window.ENV.MAPS_API_KEY || '') + '&libraries=places,marker&loading=async';
-    s.async = true;
-    s.defer = true;
-    document.head.appendChild(s);
-  })();
-</script>
-
-</body>
+    <script type="module" src="js/app.js"></script>
+    <script>
+      // Dynamically load Maps JS API using the key from config.js (window.ENV)
+      // This avoids hardcoding the API key in source HTML
+      (function () {
+        const s = document.createElement("script");
+        s.src =
+          "https://maps.googleapis.com/maps/api/js?key=" +
+          ((window.ENV && window.ENV.MAPS_API_KEY) || "") +
+          "&libraries=places,marker&loading=async";
+        s.async = true;
+        s.defer = true;
+        document.head.appendChild(s);
+      })();
+    </script>
+  </body>
 </html>

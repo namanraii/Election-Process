@@ -21,8 +21,11 @@
  *
  * @see https://firebase.google.com/docs/analytics/get-started?platform=web
  */
-import { getAnalytics, logEvent, setUserProperties } from
-  "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
+import {
+  getAnalytics,
+  logEvent,
+  setUserProperties,
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js";
 import { logger } from "./logger.js";
 
 /** @type {import("firebase/analytics").Analytics|null} GA4 analytics instance */
@@ -41,7 +44,10 @@ export function initAnalytics(app, uid = null) {
   try {
     _analytics = getAnalytics(app);
     if (uid) {
-      setUserProperties(_analytics, { session_type: "anonymous", app: "ElectionIQ" });
+      setUserProperties(_analytics, {
+        session_type: "anonymous",
+        app: "ElectionIQ",
+      });
     }
     logEvent(_analytics, "app_open", { app: "ElectionIQ", platform: "web" });
     logger.info("analytics", "GA4 initialised");
@@ -62,8 +68,8 @@ export function initAnalytics(app, uid = null) {
 export function trackChatMessage(intent, isQuickAction = false) {
   _logSafe("civic_question_asked", {
     intent_category: intent,
-    input_method:    isQuickAction ? "quick_action_chip" : "text_input",
-    app:             "ElectionIQ",
+    input_method: isQuickAction ? "quick_action_chip" : "text_input",
+    app: "ElectionIQ",
   });
 }
 
@@ -75,7 +81,10 @@ export function trackChatMessage(intent, isQuickAction = false) {
  * @returns {void}
  */
 export function trackProactiveAlert(triggerKey) {
-  _logSafe("milestone_alert_shown", { trigger_key: triggerKey, app: "ElectionIQ" });
+  _logSafe("milestone_alert_shown", {
+    trigger_key: triggerKey,
+    app: "ElectionIQ",
+  });
 }
 
 /**
@@ -104,7 +113,9 @@ export function trackMilestoneClick(milestoneId) {
  * @private
  */
 function _logSafe(eventName, params) {
-  if (!_analytics) {return;}
+  if (!_analytics) {
+    return;
+  }
   try {
     logEvent(_analytics, eventName, params);
   } catch (e) {

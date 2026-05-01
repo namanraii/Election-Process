@@ -1,5 +1,11 @@
 {
-  "phases": ["voter registration", "primary", "general", "runoff", "certification"],
+  "phases": [
+    "voter registration",
+    "primary",
+    "general",
+    "runoff",
+    "certification"
+  ],
   "steps": {
     "registration": ["check eligibility", "fill form", "submit", "receive card"]
   },
@@ -12,11 +18,29 @@
     "down-ballot": "Relating to a contest for a political office that appears in a relatively low position on the electoral ballot."
   },
   "faqs": [
-    { "question": "How do I register to vote?", "answer": "You can register online, by mail, or in person at your local election office." },
-    { "question": "Find my polling place", "answer": "You can find your polling place on your state's election website." },
-    { "question": "What ID do I need?", "answer": "Requirements vary by state. Some require a photo ID, while others do not." },
-    { "question": "How are votes counted?", "answer": "Votes are counted electronically or by hand, depending on the jurisdiction, and verified by election officials." },
-    { "question": "Explain the Electoral College", "answer": "The Electoral College consists of 538 electors. A majority of 270 electoral votes is required to elect the President." },
-    { "question": "What is early voting?", "answer": "Early voting allows voters to cast their ballots before Election Day." }
+    {
+      "question": "How do I register to vote?",
+      "answer": "You can register online, by mail, or in person at your local election office."
+    },
+    {
+      "question": "Find my polling place",
+      "answer": "You can find your polling place on your state's election website."
+    },
+    {
+      "question": "What ID do I need?",
+      "answer": "Requirements vary by state. Some require a photo ID, while others do not."
+    },
+    {
+      "question": "How are votes counted?",
+      "answer": "Votes are counted electronically or by hand, depending on the jurisdiction, and verified by election officials."
+    },
+    {
+      "question": "Explain the Electoral College",
+      "answer": "The Electoral College consists of 538 electors. A majority of 270 electoral votes is required to elect the President."
+    },
+    {
+      "question": "What is early voting?",
+      "answer": "Early voting allows voters to cast their ballots before Election Day."
+    }
   ]
 }

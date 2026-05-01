@@ -11,16 +11,16 @@
  * 3. election-day: today is election day
  * 4. results-incoming: 1 day after election
  */
-import { getLiveContext }      from "./firebase.js";
-import { askGeminiProactive }  from "./gemini.js";
+import { getLiveContext } from "./firebase.js";
+import { askGeminiProactive } from "./gemini.js";
 import { trackProactiveAlert } from "./analytics.js";
-import { logger }              from "./logger.js";
+import { logger } from "./logger.js";
 
 /** @type {string|null} Key of the last fired trigger — prevents duplicate alerts */
 let _lastTrigger = null;
 
 /** @type {ReturnType<typeof setInterval>|null} Reference to the polling interval */
-let _intervalId  = null;
+let _intervalId = null;
 
 /** @constant {number} Proactive check interval in milliseconds */
 const POLL_INTERVAL_MS = 30_000;
@@ -36,7 +36,9 @@ const MS_PER_DAY = 86_400_000;
  * @returns {void}
  */
 export function startProactiveLoop(onMessage) {
-  if (_intervalId) {return;} // Guard against double-start
+  if (_intervalId) {
+    return;
+  } // Guard against double-start
   _intervalId = setInterval(() => _evaluate(onMessage), POLL_INTERVAL_MS);
   _evaluate(onMessage); // Trigger immediately on load
 }
@@ -66,15 +68,14 @@ export function evaluateTrigger(ctx) {
   const milestones = ctx.milestones || {};
   const now = Date.now();
 
-  const daysDiff = (ts) => 
-    Math.round((ts - now) / MS_PER_DAY);
+  const daysDiff = (ts) => Math.round((ts - now) / MS_PER_DAY);
 
   if (milestones.registrationDeadline) {
     const regDays = daysDiff(milestones.registrationDeadline);
     if (regDays >= 0 && regDays <= 3) {
       return {
-        key: 'reg-closing',
-        reason: `Voter registration closes in ${regDays} day(s).`
+        key: "reg-closing",
+        reason: `Voter registration closes in ${regDays} day(s).`,
       };
     }
   }
@@ -82,21 +83,24 @@ export function evaluateTrigger(ctx) {
   if (milestones.earlyVotingStart) {
     const earlyDays = daysDiff(milestones.earlyVotingStart);
     if (earlyDays === 0) {
-      return { key: 'early-voting-starts',
-        reason: 'Early voting opens today.' };
+      return {
+        key: "early-voting-starts",
+        reason: "Early voting opens today.",
+      };
     }
   }
 
   if (milestones.electionDay) {
     const electionDays = daysDiff(milestones.electionDay);
     if (electionDays === 0) {
-      return { key: 'election-day',
-        reason: 'Today is Election Day.' };
+      return { key: "election-day", reason: "Today is Election Day." };
     }
 
     if (electionDays === -1) {
-      return { key: 'results-incoming',
-        reason: 'Polls closed yesterday. Counting is underway.' };
+      return {
+        key: "results-incoming",
+        reason: "Polls closed yesterday. Counting is underway.",
+      };
     }
   }
 
@@ -115,7 +119,9 @@ async function _evaluate(onMessage) {
   performance.mark("proactive-eval-start");
   const ctx = getLiveContext();
   const trigger = evaluateTrigger(ctx);
-  if (!trigger || trigger.key === _lastTrigger) {return;}
+  if (!trigger || trigger.key === _lastTrigger) {
+    return;
+  }
   _lastTrigger = trigger.key;
   trackProactiveAlert(trigger.key); // GA4 event: proactive alert delivered
   try {
@@ -125,8 +131,10 @@ async function _evaluate(onMessage) {
     logger.error("proactive", "Message generation failed:", e.message);
   } finally {
     performance.mark("proactive-eval-end");
-    performance.measure("proactive-eval", "proactive-eval-start", "proactive-eval-end");
+    performance.measure(
+      "proactive-eval",
+      "proactive-eval-start",
+      "proactive-eval-end",
+    );
   }
 }
-
-

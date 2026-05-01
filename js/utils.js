@@ -48,8 +48,13 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = 8_000) {
  * sanitise("How long is the queue?");         // → "How long is the queue?"
  */
 export function sanitise(raw, maxLen = 300) {
-  if (typeof raw !== "string") {return "";}
-  return raw.replace(/[<>&"'`]/g, "").substring(0, maxLen).trim();
+  if (typeof raw !== "string") {
+    return "";
+  }
+  return raw
+    .replace(/[<>&"'`]/g, "")
+    .substring(0, maxLen)
+    .trim();
 }
 
 /**

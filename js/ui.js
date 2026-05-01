@@ -37,7 +37,9 @@ const MSG_CLASS = "msg";
  */
 export function appendMessage(text, role, isProactive = false) {
   const log = document.getElementById("messages");
-  if (!log) {return document.createElement("div");} // Safe fallback for tests
+  if (!log) {
+    return document.createElement("div");
+  } // Safe fallback for tests
 
   const div = document.createElement("div");
   div.className = `${MSG_CLASS} ${MSG_CLASS}--${role}${isProactive ? ` ${MSG_CLASS}--proactive` : ""}`;
@@ -64,7 +66,9 @@ export function appendMessage(text, role, isProactive = false) {
  * @returns {void}
  */
 export function updateBotMessage(el, text) {
-  if (!el) {return;}
+  if (!el) {
+    return;
+  }
   el.textContent = text;
   el.setAttribute("aria-label", `ElectionIQ says: ${text}`);
 }
@@ -80,10 +84,14 @@ export function updateBotMessage(el, text) {
 export function showAlertBanner(message, durationMs = 10_000) {
   const banner = document.getElementById("alert-banner");
   const textEl = document.getElementById("alert-text");
-  if (!banner || !textEl) {return;}
+  if (!banner || !textEl) {
+    return;
+  }
   textEl.textContent = message;
   banner.hidden = false;
-  setTimeout(() => { banner.hidden = true; }, durationMs);
+  setTimeout(() => {
+    banner.hidden = true;
+  }, durationMs);
 }
 
 /**
@@ -93,7 +101,9 @@ export function showAlertBanner(message, durationMs = 10_000) {
  */
 export function hideAlertBanner() {
   const banner = document.getElementById("alert-banner");
-  if (banner) {banner.hidden = true;}
+  if (banner) {
+    banner.hidden = true;
+  }
 }
 
 /**
@@ -105,7 +115,9 @@ export function hideAlertBanner() {
  */
 export function updateElectionStatus(statusText) {
   const el = document.getElementById("game-status");
-  if (el) {el.textContent = statusText;}
+  if (el) {
+    el.textContent = statusText;
+  }
 }
 
 /**
@@ -116,7 +128,9 @@ export function updateElectionStatus(statusText) {
  */
 export function consumeInput() {
   const input = document.getElementById("user-input");
-  if (!input) {return "";}
+  if (!input) {
+    return "";
+  }
   const val = input.value.trim();
   input.value = "";
   return val;

@@ -14,8 +14,11 @@
  *
  * @see https://firebase.google.com/docs/auth/web/anonymous-auth
  */
-import { getAuth, signInAnonymously, onAuthStateChanged } from
-  "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { logger } from "./logger.js";
 
 /** @type {import("firebase/auth").Auth|null} Firebase Auth instance */
@@ -40,7 +43,7 @@ export async function initAuth(app) {
     logger.info("auth", `Anonymous session started: ${_uid.slice(0, 8)}…`);
 
     // Keep UID updated across token refreshes
-    onAuthStateChanged(_auth, user => {
+    onAuthStateChanged(_auth, (user) => {
       _uid = user ? user.uid : null;
     });
 

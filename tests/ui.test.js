@@ -7,7 +7,14 @@
 
 import { jest } from "@jest/globals";
 
-const { appendMessage, updateBotMessage, showAlertBanner, hideAlertBanner, updateElectionStatus, consumeInput } = await import("../js/ui.js");
+const {
+  appendMessage,
+  updateBotMessage,
+  showAlertBanner,
+  hideAlertBanner,
+  updateElectionStatus,
+  consumeInput,
+} = await import("../js/ui.js");
 
 describe("ui.js — DOM rendering", () => {
   beforeEach(() => {
@@ -68,7 +75,9 @@ describe("ui.js — DOM rendering", () => {
     const el = appendMessage("…", "bot");
     updateBotMessage(el, "Here is your answer");
     expect(el.textContent).toBe("Here is your answer");
-    expect(el.getAttribute("aria-label")).toBe("ElectionIQ says: Here is your answer");
+    expect(el.getAttribute("aria-label")).toBe(
+      "ElectionIQ says: Here is your answer",
+    );
   });
 
   test("updateBotMessage handles null element gracefully", () => {
@@ -106,7 +115,9 @@ describe("ui.js — DOM rendering", () => {
   // --- updateElectionStatus tests ---
   test("updateElectionStatus updates status text", () => {
     updateElectionStatus("Early Voting Period");
-    expect(document.getElementById("game-status").textContent).toBe("Early Voting Period");
+    expect(document.getElementById("game-status").textContent).toBe(
+      "Early Voting Period",
+    );
   });
 
   test("updateElectionStatus handles missing element", () => {

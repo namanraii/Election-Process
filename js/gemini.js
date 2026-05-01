@@ -50,21 +50,25 @@ Rules:
 export async function askGemini(userMessage, ctx) {
   // Cache key: question + election phase
   const cacheKey = `${userMessage}|${ctx.phases?.current}`;
-  if (_responseCache.has(cacheKey)) {return _responseCache.get(cacheKey);}
+  if (_responseCache.has(cacheKey)) {
+    return _responseCache.get(cacheKey);
+  }
 
   const contextBlock = _buildContextBlock(ctx);
 
   const body = {
     system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-    contents: [{
-      role: "user",
-      parts: [{ text: `${contextBlock}\n\nUser: ${userMessage}` }]
-    }],
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `${contextBlock}\n\nUser: ${userMessage}` }],
+      },
+    ],
     generationConfig: {
       maxOutputTokens: 256,
       temperature: 0.35,
-      topP: 0.9
-    }
+      topP: 0.9,
+    },
   };
 
   const stopTrace = startTrace("gemini_response");
@@ -74,8 +78,8 @@ export async function askGemini(userMessage, ctx) {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    }
+      body: JSON.stringify(body),
+    },
   );
 
   if (!res.ok) {

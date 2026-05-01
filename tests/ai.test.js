@@ -10,7 +10,12 @@ import { jest } from "@jest/globals";
 const mockAskGemini = jest.fn().mockResolvedValue("Gemini fallback reply");
 const mockFetchWithTimeout = jest.fn();
 const mockStartTrace = jest.fn(() => jest.fn());
-const mockLogger = { warn: jest.fn(), info: jest.fn(), error: jest.fn(), debug: jest.fn() };
+const mockLogger = {
+  warn: jest.fn(),
+  info: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+};
 
 jest.unstable_mockModule("../js/gemini.js", () => ({
   askGemini: mockAskGemini,
@@ -62,7 +67,7 @@ describe("ai.js — routeAIQuery", () => {
     expect(result).toBe("Gemini fallback reply");
     expect(mockLogger.warn).toHaveBeenCalledWith(
       "ai",
-      "Cloud Function timeout — using direct Gemini"
+      "Cloud Function timeout — using direct Gemini",
     );
   });
 
@@ -106,6 +111,9 @@ describe("ai.js — routeAIQuery", () => {
 
     const context = { milestones: { electionDay: 1234567890 } };
     await routeAIQuery("When is election day?", context, "process");
-    expect(mockAskGemini).toHaveBeenCalledWith("When is election day?", context);
+    expect(mockAskGemini).toHaveBeenCalledWith(
+      "When is election day?",
+      context,
+    );
   });
 });

@@ -18,10 +18,10 @@
  * @constant {Array<{id: string, label: string}>}
  */
 const STEPS = [
-  { id: 'registrationDeadline', label: 'Voter Registration' },
-  { id: 'earlyVotingStart', label: 'Early Voting Begins' },
-  { id: 'electionDay', label: 'Election Day' },
-  { id: 'certificationDate', label: 'Results Certification' },
+  { id: "registrationDeadline", label: "Voter Registration" },
+  { id: "earlyVotingStart", label: "Early Voting Begins" },
+  { id: "electionDay", label: "Election Day" },
+  { id: "certificationDate", label: "Results Certification" },
 ];
 
 /**
@@ -34,42 +34,44 @@ const STEPS = [
  * @returns {void}
  */
 export function initTimeline(container, milestones) {
-  if (!container) {return;}
+  if (!container) {
+    return;
+  }
   // Clear previous timeline content safely
   while (container.firstChild) {
     container.removeChild(container.firstChild);
   }
 
-  const wrapper = document.createElement('div');
-  wrapper.className = 'election-timeline';
-  wrapper.setAttribute('role', 'list');
-  wrapper.setAttribute('aria-label', 'Election process timeline');
-  wrapper.style.padding = '20px';
-  wrapper.style.display = 'flex';
-  wrapper.style.flexDirection = 'column';
-  wrapper.style.gap = '20px';
+  const wrapper = document.createElement("div");
+  wrapper.className = "election-timeline";
+  wrapper.setAttribute("role", "list");
+  wrapper.setAttribute("aria-label", "Election process timeline");
+  wrapper.style.padding = "20px";
+  wrapper.style.display = "flex";
+  wrapper.style.flexDirection = "column";
+  wrapper.style.gap = "20px";
 
   STEPS.forEach((step) => {
-    const item = document.createElement('div');
+    const item = document.createElement("div");
     item.className = `timeline-item ${step.id}`;
     item.tabIndex = 0;
-    item.setAttribute('role', 'button');
-    item.setAttribute('aria-label', `${step.label} milestone`);
-    item.style.padding = '10px';
-    item.style.border = '1px solid var(--color-border-tertiary)';
-    item.style.borderRadius = 'var(--border-radius-md)';
-    item.style.cursor = 'pointer';
+    item.setAttribute("role", "button");
+    item.setAttribute("aria-label", `${step.label} milestone`);
+    item.style.padding = "10px";
+    item.style.border = "1px solid var(--color-border-tertiary)";
+    item.style.borderRadius = "var(--border-radius-md)";
+    item.style.cursor = "pointer";
 
     // Build child elements safely using textContent (no innerHTML)
-    const labelEl = document.createElement('div');
-    labelEl.style.fontWeight = '500';
+    const labelEl = document.createElement("div");
+    labelEl.style.fontWeight = "500";
     labelEl.textContent = step.label;
 
-    const dateEl = document.createElement('div');
-    dateEl.style.fontSize = '12px';
-    dateEl.style.color = 'var(--color-text-secondary)';
+    const dateEl = document.createElement("div");
+    dateEl.style.fontSize = "12px";
+    dateEl.style.color = "var(--color-text-secondary)";
     const ts = milestones ? milestones[step.id] : undefined;
-    dateEl.textContent = ts ? new Date(ts).toLocaleDateString() : 'TBD';
+    dateEl.textContent = ts ? new Date(ts).toLocaleDateString() : "TBD";
 
     item.appendChild(labelEl);
     item.appendChild(dateEl);
@@ -88,18 +90,20 @@ export function initTimeline(container, milestones) {
  */
 export function updateMilestoneStatus(milestoneId, status) {
   const el = document.querySelector(`.timeline-item.${milestoneId}`);
-  if (!el) {return;}
+  if (!el) {
+    return;
+  }
 
-  if (status === 'past') {
-    el.style.opacity = '0.6';
-    el.style.borderLeft = '4px solid var(--color-text-secondary)';
-  } else if (status === 'current') {
-    el.style.opacity = '1';
-    el.style.borderLeft = '4px solid var(--color-text-info)';
-    el.style.backgroundColor = 'var(--color-background-info)';
+  if (status === "past") {
+    el.style.opacity = "0.6";
+    el.style.borderLeft = "4px solid var(--color-text-secondary)";
+  } else if (status === "current") {
+    el.style.opacity = "1";
+    el.style.borderLeft = "4px solid var(--color-text-info)";
+    el.style.backgroundColor = "var(--color-background-info)";
   } else {
-    el.style.opacity = '1';
-    el.style.borderLeft = '4px solid transparent';
+    el.style.opacity = "1";
+    el.style.borderLeft = "4px solid transparent";
   }
 }
 
@@ -113,10 +117,12 @@ export function updateMilestoneStatus(milestoneId, status) {
  */
 export function onMilestoneClick(id, callback) {
   const el = document.querySelector(`.timeline-item.${id}`);
-  if (!el) {return;}
-  el.addEventListener('click', () => callback(id));
-  el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+  if (!el) {
+    return;
+  }
+  el.addEventListener("click", () => callback(id));
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       callback(id);
     }

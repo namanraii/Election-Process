@@ -32,12 +32,16 @@
  */
 const PATTERNS = {
   registration: /register|eligible|sign.?up|voter.?id|enroll/i,
-  glossary:     /what\s+is\b|define\b|what\s+does.*mean|electoral.college|precinct|caucus/i,
-  id:           /\bidentification\b|what\s+to\s+bring|what\s+documents|passport/i,
-  results:      /\bcount(ed|ing)?\b|tally|winner|concede|certif|recount|project/i,
-  process:      /how\s+does|explain|what\s+happens|steps\s+to|timeline|election\s+process/i,
-  location:     /where\b|polling.place|near\s+me|directions\s+to|find.*poll|address.*voting/i,
-  voting:       /\bvote\b|\bballot\b|polling|absentee|early\s+voting|mail.?in|drop.?box/i,
+  glossary:
+    /what\s+is\b|define\b|what\s+does.*mean|electoral.college|precinct|caucus/i,
+  id: /\bidentification\b|what\s+to\s+bring|what\s+documents|passport/i,
+  results: /\bcount(ed|ing)?\b|tally|winner|concede|certif|recount|project/i,
+  process:
+    /how\s+does|explain|what\s+happens|steps\s+to|timeline|election\s+process/i,
+  location:
+    /where\b|polling.place|near\s+me|directions\s+to|find.*poll|address.*voting/i,
+  voting:
+    /\bvote\b|\bballot\b|polling|absentee|early\s+voting|mail.?in|drop.?box/i,
 };
 
 /**
@@ -55,9 +59,13 @@ const PATTERNS = {
  * classifyIntent("Great weather today!");              // → "general"
  */
 export function classifyIntent(msg) {
-  if (typeof msg !== "string" || msg.length === 0) {return "general";}
+  if (typeof msg !== "string" || msg.length === 0) {
+    return "general";
+  }
   for (const [intent, pattern] of Object.entries(PATTERNS)) {
-    if (pattern.test(msg)) {return intent;}
+    if (pattern.test(msg)) {
+      return intent;
+    }
   }
   return "general";
 }
@@ -74,7 +82,9 @@ export function classifyIntent(msg) {
  * // → ["registration", "process"]
  */
 export function classifyIntentAll(msg) {
-  if (typeof msg !== "string") {return [];}
+  if (typeof msg !== "string") {
+    return [];
+  }
   return Object.entries(PATTERNS)
     .filter(([, pattern]) => pattern.test(msg))
     .map(([intent]) => intent);

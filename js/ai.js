@@ -25,10 +25,10 @@
  * @see functions/index.js for the Cloud Function implementation
  */
 
-import { askGemini }        from "./gemini.js";
+import { askGemini } from "./gemini.js";
 import { fetchWithTimeout } from "./utils.js";
-import { startTrace }       from "./perf.js";
-import { logger }           from "./logger.js";
+import { startTrace } from "./perf.js";
+import { logger } from "./logger.js";
 
 /**
  * @constant {string} Deployed Cloud Function endpoint.
@@ -58,16 +58,20 @@ export async function routeAIQuery(message, context, intent = "general") {
   if (_cfHealthy) {
     const stopTrace = startTrace("cloud_function_response");
     try {
-      const res = await fetchWithTimeout(CF_URL, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({
-          message,
-          context,
-          intent,
-          sessionId: window._uid || "anonymous",
-        }),
-      }, CF_TIMEOUT_MS);
+      const res = await fetchWithTimeout(
+        CF_URL,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            context,
+            intent,
+            sessionId: window._uid || "anonymous",
+          }),
+        },
+        CF_TIMEOUT_MS,
+      );
 
       if (res.ok) {
         const { reply } = await res.json();
@@ -81,7 +85,10 @@ export async function routeAIQuery(message, context, intent = "general") {
       if (e.name === "AbortError") {
         logger.warn("ai", "Cloud Function timeout — using direct Gemini");
       } else {
-        logger.warn("ai", `Cloud Function unavailable (${e.message}) — fallback`);
+        logger.warn(
+          "ai",
+          `Cloud Function unavailable (${e.message}) — fallback`,
+        );
         _cfHealthy = false;
       }
     }

@@ -23,7 +23,7 @@
  */
 
 import { fetchWithTimeout, uniqueId } from "./utils.js";
-import { logger }                     from "./logger.js";
+import { logger } from "./logger.js";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -106,10 +106,10 @@ export async function streamInteraction(record) {
  */
 export async function streamCivicSnapshot(milestones, phases) {
   const record = {
-    ts:               Date.now(),
-    election_phase:   phases?.current  ?? "unknown",
-    phase_label:      phases?.label    ?? "Unknown",
-    milestones_json:  JSON.stringify(milestones || {}),
+    ts: Date.now(),
+    election_phase: phases?.current ?? "unknown",
+    phase_label: phases?.label ?? "Unknown",
+    milestones_json: JSON.stringify(milestones || {}),
   };
   return _insertRows(BQ_TABLE_SNAPSHOTS, [record]);
 }
@@ -129,14 +129,16 @@ export async function streamCivicSnapshot(milestones, phases) {
  * @private
  */
 async function _insertRows(table, rows) {
-  if (!window.ENV?.MAPS_API_KEY) {return;}
+  if (!window.ENV?.MAPS_API_KEY) {
+    return;
+  }
 
   const payload = {
-    rows: rows.map(json => ({
-      insertId: uniqueId("bq"),  // Ensures exactly-once semantics per row
+    rows: rows.map((json) => ({
+      insertId: uniqueId("bq"), // Ensures exactly-once semantics per row
       json,
     })),
-    skipInvalidRows:     false,
+    skipInvalidRows: false,
     ignoreUnknownValues: true,
   };
 
@@ -144,21 +146,28 @@ async function _insertRows(table, rows) {
     const res = await fetchWithTimeout(
       `${_bqInsertUrl(table)}?key=${window.ENV.MAPS_API_KEY}`,
       {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(payload),
+        body: JSON.stringify(payload),
       },
-      BQ_TIMEOUT_MS
+      BQ_TIMEOUT_MS,
     );
 
     if (!res.ok) {
-      logger.info("bigquery", `Insert to ${table} returned HTTP ${res.status} — continuing`);
+      logger.info(
+        "bigquery",
+        `Insert to ${table} returned HTTP ${res.status} — continuing`,
+      );
       return;
     }
 
     const data = await res.json();
     if (data.insertErrors?.length) {
-      logger.warn("bigquery", `Row insert errors in "${table}":`, data.insertErrors);
+      logger.warn(
+        "bigquery",
+        `Row insert errors in "${table}":`,
+        data.insertErrors,
+      );
     } else {
       logger.debug("bigquery", `Streamed ${rows.length} row(s) to "${table}"`);
     }
