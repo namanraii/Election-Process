@@ -198,16 +198,30 @@ export async function handleSubmit(e) {
  * @param {string} q - Pre-filled query string from a chip button
  * @returns {void}
  */
-window.quickAsk = function(q) {
+function quickAsk(q) {
   trackChatMessage(classifyIntent(q), true);
   document.getElementById("user-input").value = q;
   handleSubmit({ preventDefault: () => {} });
-};
+}
 
-/** Dismiss the civic alert banner. @returns {void} */
-window.dismissAlert = function() { hideAlertBanner(); };
+// Wire up all UI event listeners unobtrusively (Modern Best Practice)
+const chatForm = document.getElementById("chat-form");
+if (chatForm) {
+  chatForm.addEventListener("submit", handleSubmit);
+}
 
-window.handleSubmit = handleSubmit;
+const alertCloseBtn = document.getElementById("alert-close");
+if (alertCloseBtn) {
+  alertCloseBtn.addEventListener("click", hideAlertBanner);
+}
+
+// Wire up all action chips
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    const query = chip.getAttribute("data-query");
+    if (query) { quickAsk(query); }
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Private helpers
