@@ -243,14 +243,14 @@ function _toggleLeftPanel(showMap) {
   if (!mapEl || !timelineEl) {return;}
 
   if (showMap) {
-    mapEl.style.display      = "block";
-    legendEl.style.display   = "flex";
-    timelineEl.style.display = "none";
+    mapEl.hidden      = false;
+    legendEl.hidden   = false;
+    timelineEl.hidden = true;
     initMap(); // lazy-init map on first location query
   } else {
-    mapEl.style.display      = "none";
-    legendEl.style.display   = "none";
-    timelineEl.style.display = "block";
+    mapEl.hidden      = true;
+    legendEl.hidden   = true;
+    timelineEl.hidden = false;
   }
 }
 

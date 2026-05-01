@@ -25,6 +25,9 @@ let _intervalId  = null;
 /** @constant {number} Proactive check interval in milliseconds */
 const POLL_INTERVAL_MS = 30_000;
 
+/** @constant {number} Number of milliseconds in a day */
+const MS_PER_DAY = 86_400_000;
+
 /**
  * Start the proactive monitoring loop.
  * Immediately evaluates on first call, then every {@link POLL_INTERVAL_MS} ms.
@@ -64,7 +67,7 @@ export function evaluateTrigger(ctx) {
   const now = Date.now();
 
   const daysDiff = (ts) => 
-    Math.round((ts - now) / 86_400_000);
+    Math.round((ts - now) / MS_PER_DAY);
 
   if (milestones.registrationDeadline) {
     const regDays = daysDiff(milestones.registrationDeadline);
