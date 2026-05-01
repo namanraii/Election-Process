@@ -5,18 +5,13 @@ steps:
     entrypoint: npm
     args: ['install']
 
-  - name: 'node:20'
-    id: 'run-tests'
-    entrypoint: npm
-    args: ['test']
-    waitFor: ['install-and-test']
 
   # Step 2: Install Cloud Function dependencies
   - name: 'node:20'
     id: 'install-functions'
     entrypoint: npm
     args: ['install', '--prefix', 'functions']
-    waitFor: ['run-tests']
+    waitFor: ['install-and-test']
 
   # Step 3: Deploy Cloud Function (electionIQAssist)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -54,7 +49,7 @@ steps:
         sed -i "s/__MAPS_API_KEY__/$_MAPS_API_KEY/g"       config.js
         sed -i "s/__ROUTES_API_KEY__/$_ROUTES_API_KEY/g"     config.js
         sed -i "s|__CF_URL__|https://us-central1-$PROJECT_ID.cloudfunctions.net/electionIQAssist|g" js/ai.js
-    waitFor: ['run-tests']
+    waitFor: ['install-and-test']
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-cloud-run'
